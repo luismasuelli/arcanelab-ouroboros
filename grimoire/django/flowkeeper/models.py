@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
+from django.contrib.contenttypes.fields import GenericForeignKey
 from django.db import models
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.contenttypes.models import ContentType
 from .fields import CallableReferenceField
@@ -136,7 +137,7 @@ class Node(models.Model):
                                                 'remain in the split and wait for other branches (an exception '
                                                 'will be raised if None is returned but no branch is still to '
                                                 'finish)'))
-    branches = models.ManyToManyField(Course, blank=True, verbose_name=_('Branches'),
+    branches = models.ManyToManyField(Course, blank=True, related_name='callers', verbose_name=_('Branches'),
                                       help_text=_('Courses this node branches to. Expected only for split nodes'))
 
     def clean(self):
@@ -279,3 +280,46 @@ class Transition(models.Model):
     class Meta:
         verbose_name = _('Transition')
         verbose_name_plural = _('Transitions')
+
+
+####################################################
+# Workflow instances from here
+####################################################
+
+
+class WorkflowInstance(models.Model):
+
+    workflow = models.ForeignKey(Workflow, blank=False, null=False, on_delete=models.CASCADE, related_name='instances')
+    content_type = models.ForeignKey(ContentType, blank=False, null=False, on_delete=models.CASCADE)
+    object_id = models.PositiveIntegerField(blank=False, null=False)
+    document = GenericForeignKey('content_type', 'object_id')
+
+    def clean(self):
+        """
+        content_type must match workflow's expected content_type
+        """
+
+        try:
+            if self.content_type != self.workflow.document_type:
+                raise ValidationError(_('Workflow instances must reference documents with expected class '
+                                        'in their workflow. Current: %s. Expected: %s') % (
+                    self.content_type.model_class().__name__, self.workflow.document_type.model_class().__name__
+                ))
+        except ObjectDoesNotExist:
+            pass
+
+    class Meta:
+        verbose_name = _('Workflow Instance')
+        verbose_name_plural = _('Workflow Instances')
+
+
+# class CourseInstance(models.Model):
+#
+#     workflow_instance = models.ForeignKey(WorkflowInstance, null=False, blank=False, on_delete=models.CASCADE)
+#     parent = models.ForeignKey('NodeInstance', null=False, blank=False, on_delete=models.CASCADE)
+#     course = models.ForeignKey(Course, null=False, blank=False, on_delete=models.CASCADE)
+
+
+# class NodeInstance(models.Model):
+#
+#     pass
