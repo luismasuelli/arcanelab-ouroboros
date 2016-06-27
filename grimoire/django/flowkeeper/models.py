@@ -160,21 +160,24 @@ class Node(models.Model):
             elif self.type in (self.INPUT, self.MULTIPLEXER, self.SPLIT):
                 if self.inbounds.exists() or self.outbounds.exists():
                     raise ValidationError(_('Input nodes must have at least one inbound and one outbound transitions'))
-                if self.type == self.SPLIT:
-                    if self.branches.count() < 2:
-                        raise ValidationError(_('Split nodes must have at least two branches'))
-                    try:
-                        if self.branches.exclude(depth=self.course.depth+1).exists():
-                            raise ValidationError(_('Split nodes must branch to courses with depth=(depth)+1'))
-                        if self.branches.exclude(workflow=self.course.workflow).exists():
-                            raise ValidationError(_('Split nodes must branch to courses in the same workflow'))
-                    except Course.DoesNotExist:
-                        pass
             elif self.type == self.STEP:
                 if self.outbounds.count() != 1:
                     raise ValidationError(_('Step nodes must have exactly one outbound transition'))
                 if not self.inbounds.exists():
                     raise ValidationError(_('Step nodes must have at least one inbound transition'))
+            if self.type == self.SPLIT:
+                if self.branches.count() < 2:
+                    raise ValidationError(_('Split nodes must have at least two branches'))
+                try:
+                    if self.branches.exclude(depth=self.course.depth+1).exists():
+                        raise ValidationError(_('Split nodes must branch to courses with depth=(depth)+1'))
+                    if self.branches.exclude(workflow=self.course.workflow).exists():
+                        raise ValidationError(_('Split nodes must branch to courses in the same workflow'))
+                except Course.DoesNotExist:
+                    pass
+            else:
+                if self.branches.exists():
+                    raise ValidationError(_('Only split nodes can have branches'))
 
     class Meta:
         verbose_name = _('Node')
