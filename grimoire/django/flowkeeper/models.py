@@ -76,6 +76,9 @@ class Course(models.Model):
                                              help_text=_('Tells the depth of this course. The main course must be '
                                                          'of depth 0, while successive descendants should increment '
                                                          'the level by 1'))
+    permission = models.CharField(max_length=201, blank=True, null=True, verbose_name=_('Permission'),
+                                  help_text=_('Permission code (as <application>.<permission>) to test against. The '
+                                              'user who intends to start this course must satisfy this permission.'))
 
     def clean(self):
         """
