@@ -23,7 +23,6 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('code', models.SlugField(help_text='Internal (unique) code', max_length=20, verbose_name='Code')),
                 ('depth', models.PositiveSmallIntegerField(help_text='Tells the depth of this course. The main course must be of depth 0, while successive descendants should increment the level by 1', verbose_name='Depth')),
-                ('permission', models.CharField(max_length=201, blank=True, null=True, verbose_name='Permission', help_text='Permission code (as <application>.<permission>) to test against. The user who intends to start this course must satisfy this permission.'))
             ],
             options={
                 'verbose_name': 'Course',
