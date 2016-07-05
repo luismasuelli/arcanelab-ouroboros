@@ -39,6 +39,10 @@ class Workflow(models.Model):
                             help_text=_('Internal (unique) code'))
     name = models.CharField(max_length=60, null=False, blank=False, verbose_name=_('Name'))
     description = models.CharField(max_length=100, null=False, blank=False, verbose_name=_('Description'))
+    permission = models.CharField(max_length=201, blank=True, null=True, verbose_name=_('Permission'),
+                                  help_text=_('Permission code (as <application>.<permission>) to test against. The '
+                                              'user who intends to create a workflow instance must satisfy this '
+                                              'permission.'))
     objects = CodeManager()
 
     def natural_key(self):
@@ -210,6 +214,10 @@ class Transition(models.Model):
     action_name = models.SlugField(max_length=30, blank=True, null=True, verbose_name=_('Action Name'),
                                    help_text=_('Action name for this transition. Unique with respect to the origin '
                                                'node. Expected only for split and input nodes'))
+    # These fields are only allowed for input
+    permission = models.CharField(max_length=201, blank=True, null=True, verbose_name=_('Permission'),
+                                  help_text=_('Permission code (as <application>.<permission>) to test against. It is '
+                                              'not required, but only allowed if coming from an input node.'))
     # These fields are only allowed for multiplexer
     condition = CallableReferenceField(blank=True, null=True, verbose_name=_('Condition'),
                                        help_text=_('A callable evaluating the condition. Expected only for '
@@ -276,6 +284,10 @@ class Transition(models.Model):
             # null
             if self.action_name is not None:
                 raise ValidationError({'action_name': [_('This field must be null.')]})
+        if origin.type != Node.INPUT:
+            # Null or blank.
+            if origin.permission is not None:
+                raise ValidationError({'permission': [_('This field must be null.')]})
 
     class Meta:
         verbose_name = _('Transition')
