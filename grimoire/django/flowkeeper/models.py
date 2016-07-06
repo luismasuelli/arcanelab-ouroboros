@@ -70,12 +70,13 @@ class Course(models.Model):
 
     workflow = models.ForeignKey(Workflow, null=False, blank=False, on_delete=models.CASCADE, related_name='courses',
                                  verbose_name=_('Workflow'), help_text=_('Workflow this course belongs to'))
-    code = models.SlugField(max_length=20, null=False, blank=False, verbose_name=_('Code'),
+    code = models.SlugField(max_length=20, null=False, blank=True, verbose_name=_('Code'),
                             help_text=_('Internal (unique) code'))
     depth = models.PositiveSmallIntegerField(verbose_name=_('Depth'), null=False, blank=False,
                                              help_text=_('Tells the depth of this course. The main course must be '
                                                          'of depth 0, while successive descendants should increment '
                                                          'the level by 1'))
+
     def clean(self):
         """
         A course must validate by having:
@@ -83,6 +84,9 @@ class Course(models.Model):
         - Exactly one "cancel" exit node.
         - At least one non-"cancel" exit node.
         """
+
+        if (self.code == '') ^ (self.depth == 0):
+            raise ValidationError(_('A course should have an empty code if, and only if, its depth is zero'))
 
         if self.pk:
             if self.nodes.filter(type=Node.ENTER).count() != 1:
