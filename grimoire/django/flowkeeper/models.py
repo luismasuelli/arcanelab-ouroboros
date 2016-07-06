@@ -276,7 +276,7 @@ class Transition(models.Model):
             elif self.action_name:
                 raise ValidationError({'action_name': [_('This field cannot be blank.')]})
             # unique
-            elif self.origin.outbounds.exclude(pk=self.pk).filter(action_name=self.action_name).exists():
+            elif origin.outbounds.exclude(pk=self.pk).filter(action_name=self.action_name).exists():
                 raise ValidationError({'action_name': [_('This field must be unique among transitions in '
                                                          'split and input nodes.')]})
         else:
@@ -285,7 +285,7 @@ class Transition(models.Model):
                 raise ValidationError({'action_name': [_('This field must be null.')]})
         if origin.type not in (Node.INPUT, Node.ENTER):
             # Null or blank.
-            if origin.permission is not None:
+            if self.permission is not None:
                 raise ValidationError({'permission': [_('This field must be null.')]})
 
     class Meta:
