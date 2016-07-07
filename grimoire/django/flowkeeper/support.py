@@ -92,6 +92,10 @@ class WorkflowCourseCodeDoesNotExist(WorkflowMiscException):
     pass
 
 
+class WorkflowMultiplexerChoseNoTransition(WorkflowMiscException):
+    pass
+
+
 class WorkflowSplitResolutionNeedsTransitionCodeMixin(WorkflowMiscException):
     pass
 
