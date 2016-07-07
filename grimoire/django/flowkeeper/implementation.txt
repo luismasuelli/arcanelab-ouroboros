@@ -92,7 +92,14 @@ TRANSACCIONALIDAD: TODAS las acciones publicas envuelven de una u otra manera el
        (.) DETENERNOS
 
 5. Como se deja un flujo en un estado consistente.
-   [TO-DO]
+
+   Parametros: instancia_curso.
+   (Contexto de objeto).
+
+   <La implementacion sera hacer el comportamiento para nodos
+    tipo PASO o MULTIPLEXACION exactamente como si se tratara del
+    inciso A recien llegando a este nodo, aunque el nodo del que
+    estemos hablando sea el actual y no el de destino>
 
 A. Como se ejecuta una transicion dentro de una instancia de workflow.
 
