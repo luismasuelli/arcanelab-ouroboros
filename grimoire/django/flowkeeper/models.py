@@ -96,11 +96,13 @@ class Course(models.Model):
             if not self.nodes.filter(type=Node.EXIT).exists():
                 raise ValidationError(_('A workflow course is expected to have at least one exit node'))
             if self.deph > 0:
-                if self.nodes.filter(type=Node.JOINED).exists():
-                    raise ValidationError(_('A non-root workflow course is expected to have at least one joined node'))
                 if not self.callers.exists() or self.callers.exclude(course__depth__lt=self.depth, type=Node.SPLIT):
                     raise ValidationError(_('A non-root workflow course is expected to have at least one calling node. '
                                             'Each calling node must be a split node, and have a lower depth.'))
+                if self.callers.exclude(joiner__isnull=True).exists() and not \
+                        self.nodes.filter(type=Node.JOINED).exists():
+                    raise ValidationError(_('A non-root workflow course is expected to have at least one joined node '
+                                            'when having at least one calling split with a joiner callable'))
             else:
                 if self.callers.exists():
                     raise ValidationError(_('A root node cannot have callers'))
