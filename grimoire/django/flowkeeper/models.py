@@ -170,16 +170,19 @@ class Node(models.Model):
                     raise ValidationError(_('Enter nodes must not have inbound transitions'))
                 if self.outbounds.count() != 1:
                     raise ValidationError(_('Enter nodes must have exactly one outbound transition'))
-            elif self.type in (self.CANCEL, self.JOINED):
+            if self.type in (self.CANCEL, self.JOINED):
                 if self.inbounds.exists() or self.outbounds.exists():
                     raise ValidationError(_('Cancel and joined nodes must not have any transition'))
-            elif self.type == self.EXIT:
+            if self.type == self.EXIT:
                 if self.outbounds.exists():
                     raise ValidationError(_('Exit nodes must not have outbound transitions'))
-            elif self.type in (self.INPUT, self.MULTIPLEXER, self.SPLIT):
+            else:
+                if self.exit_value is not None:
+                    raise ValidationError({'exit_value': [_('This field must be null.')]})
+            if self.type in (self.INPUT, self.MULTIPLEXER, self.SPLIT):
                 if self.inbounds.exists() or self.outbounds.exists():
                     raise ValidationError(_('Input nodes must have at least one inbound and one outbound transitions'))
-            elif self.type == self.STEP:
+            if self.type == self.STEP:
                 if self.outbounds.count() != 1:
                     raise ValidationError(_('Step nodes must have exactly one outbound transition'))
                 if not self.inbounds.exists():
@@ -198,7 +201,7 @@ class Node(models.Model):
                 if self.branches.exists():
                     raise ValidationError(_('Only split nodes can have branches'))
                 if self.joiner:
-                    raise ValidationError(_('Only split nodes can have a joiner'))
+                    raise ValidationError({'joiner': [_('This field must be null.')]})
 
     class Meta:
         verbose_name = _('Node')
