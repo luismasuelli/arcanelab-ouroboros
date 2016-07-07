@@ -21,7 +21,7 @@ class Document(models.Model):
         abstract = True
 
 
-class CodeManager(models.Manager):
+class WorkflowManager(models.Manager):
 
     def get_by_natural_key(self, code):
         return self.get(code=code)
@@ -43,7 +43,7 @@ class Workflow(models.Model):
                                   help_text=_('Permission code (as <application>.<permission>) to test against. The '
                                               'user who intends to create a workflow instance must satisfy this '
                                               'permission.'))
-    objects = CodeManager()
+    objects = WorkflowManager()
 
     def natural_key(self):
         return self.code
@@ -63,6 +63,12 @@ class Workflow(models.Model):
         verbose_name_plural = _('Workflows')
 
 
+class CourseManager(models.Manager):
+
+    def get_by_natural_key(self, wf_code, code):
+        return self.get(workflow__code=wf_code, code=code)
+
+
 class Course(models.Model):
     """
     Workflow action course.
@@ -76,6 +82,10 @@ class Course(models.Model):
                                              help_text=_('Tells the depth of this course. The main course must be '
                                                          'of depth 0, while successive descendants should increment '
                                                          'the level by 1'))
+    objects = CourseManager()
+
+    def natural_key(self):
+        return self.workflow.code, self.code
 
     def clean(self):
         """
