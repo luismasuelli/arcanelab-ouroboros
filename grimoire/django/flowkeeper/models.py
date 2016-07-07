@@ -197,6 +197,9 @@ class Node(models.Model):
                         raise ValidationError(_('Split nodes must branch to courses in the same workflow'))
                 except Course.DoesNotExist:
                     pass
+                if (self.joiner is None) ^ (self.outbounds.count() == 1):
+                    raise ValidationError(_('Split nodes with one outbound must have no joiner, while split nodes with '
+                                            'many outbounds must have joiner.'))
             else:
                 if self.branches.exists():
                     raise ValidationError(_('Only split nodes can have branches'))
