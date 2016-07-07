@@ -101,14 +101,17 @@ A. Como se ejecuta una transicion dentro de una instancia de workflow.
    (!) Verificamos que el destino no sea ENTER ni CANCELADO.
        [ValidationError wrappeado]
    (.) nodo = Tomamos el nodo de destino de dicha transicion.
-   (.) curso = Tomamos el curso de dicho nodo.
-   (.) instancia_curso = Tomamos la instancia de curso en el objeto, para <curso>
+   (.) curso = Tomamos instancia_curso.curso.
    (.) SI nodo es tipo INPUT o EXIT:
-       (.) curso.nodo = instancia de (nodo)
-       (.) salvar curso.nodo y curso
-       (.) DETENERNOS
-           # Para el caso de EXIT, la sola presencia del nodo implica que
-           # se encuentra terminado.
+       (.) instancia_curso.nodo = instancia de (nodo)
+       (.) salvar instancia_curso.nodo y instancia_curso
+       (.) SI nodo es tipo INPUT
+           (.) DETENERNOS
+       (.) SI nodo es tipo EXIT
+           (.) SI instancia_curso.padre
+               Excitar joiner con instancia_curso, usuario, nodo.exit_value
+           (.) SINO
+               (.) DETENERNOS
    (.) SI nodo es tipo SPLIT
        (!) Verificamos que el nodo tenga al menos dos ramas.
        [ValidationError wrappeado]
@@ -129,7 +132,16 @@ A. Como se ejecuta una transicion dentro de una instancia de workflow.
        (.) transicion = tomamos esa transicion de salida.
        (.) LLAMADA RECURSIVA con transicion, instancia_curso, usuario.
    (.) SI nodo es tipo MULTIPLEXACION:
-       (.)
+       (.) Toma todas las transiciones, ordenadas crecientemente por prioridad.
+       (!) Las transiciones deben tener prioridad y callable.
+           [ValidationError wrappeado]
+       (.) Las evalua en orden: de cada transicion toma su callable y lo invoca.
+           Ese callable deberia invocarse tomando solamente al documento y al
+           usuario. Si la condicion evalua un valor verdadero, nos quedamos
+           con esa transicion y no con las siguientes.
+       (!) Debemos tener, al final, alguna transicion.
+           [WorkflowMultiplexerChoseNoTransition]
+       (.) LLAMADA RECURSIVA con transicion (nueva), instancia_curso, usuario.
 
 B. Obtener una instancia de curso para una instancia de workflow y una cadena jerarquica.
 
@@ -160,3 +172,65 @@ C. Obtener una instancia de curso para una instancia de curso raiz, y una cadena
            uno -y solo uno- cuyo codigo sea cabeza.
            [WorkflowCourseCodeDoesNotExist]
        (.) Tomamos ese nodo, y le pedimos que ejecute este inciso C, con la cola.
+
+D. Excitar un join de un nodo split superior, en una instancia de workflow.
+
+   Parametros: instancia_curso, usuario, codigo de salida (>= 0 salida, -1 cancelacion).
+   (Contexto de objeto)
+
+   (*) Sabemos que existe instancia_curso.padre.
+   (!) Verificamos que instancia_curso.padre.curso dentro de instancia_curso.curso.callers.
+       [ValidationError wrappeado]
+   (!) Verificamos que instancia_curso.padre sea un nodo SPLIT.
+       [ValidationError wrappeado]
+   (!) Verificamos que el nodo es consistente respecto de tener joiner y la
+       cantidad de outbounds.
+       [ValidationError wrappeado]
+   (.) Tomamos el callable, y todas las transiciones.
+       Si el callable es nulo, usamos un callable predeterminado que tiene
+       en cuenta el codigo de la unica transicion presente, y lo devuelve cuando
+       todas las instancias de curso que son ramas estan terminadas, mientras que
+       devuelve nulo en los otros casos. Este callable devolvera None siempre que
+       al menos una entrada del diccionario sea None.
+   (.) De la instancia de nodo padre tomamos todas las instancias de curso que le son
+       hijas.
+   (!) Verificamos que todas las instancias de curso hijas correspondan con todas
+       las ramas en el nodo split, consistentemente.
+       [ValidationError wrappeado]
+   (.) Armamos un diccionario codigo => exit_value con todas las instancias de
+       cursos hijas donde codigo es el codigo del curso mientras que exit_value
+       va a ser None (todavia esta corriendo), -1 (fue cancelado), o un numero
+        >= 0 (fue terminada).
+   (.) Tomamos instancia_curso.curso.codigo y tomamos exit_value.
+   (.) Con esos tres parametros (diccionario, codigo, exit_value) invocamos el
+       callable. Tomamos su valor.
+   (.) Actualizamos el diccionario que hicimos, con [codigo] = exit_value
+   (.) Evaluamos lo que devolvio el callable:
+       (!) Solo se acepta None o algun string/unicode como valor de retorno.
+           [WorkflowSplitResolutionBadValue]
+       (.) None:
+           (!) En el diccionario actualizado al menos una entrada tiene que
+               quedar con None.
+               [WorkflowSplitResolutionNeedsTransitionCode]
+           DETENEMOS
+       (.) Un string (o unicode):
+           (!) Debe existir una transicion outbound dentro del split con ese
+               codigo, y solo una.
+               [WorkflowSplitResolutionTransitionCodeNotUnique o
+                WorkflowSplitResolutionTransitionCodeDoesNotExist]
+           (.) Tomamos esa transicion.
+           (.) Para todas las claves en el diccionario que estan en None:
+               (.) La marcamos en joined (inciso E).
+
+E. Poner una instancia de curso en JOINED.
+
+   Parametros: instancia de curso, usuario.
+
+   (*) Sabemos que la instancia de curso a poner en joined es consistente.
+   (!) Verificamos que la instancia hermana de la actual que lleva dicha clave
+       por codigo, tenga un nodo joined.
+   (.) Si la instancia de nodo actual en la instancia de curso referencia a un SPLIT:
+       (.) Por cada instancia de curso hija:
+           (.) RECURSIVAMENTE las vamos poniendo en joined.
+   (.) Ponemos la instancia hermana de la actual con dicho codigo
+       en su nodo de tipo JOINED.
