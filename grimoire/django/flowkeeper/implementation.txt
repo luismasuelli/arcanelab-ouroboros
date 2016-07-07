@@ -220,17 +220,17 @@ D. Excitar un join de un nodo split superior, en una instancia de workflow.
                 WorkflowSplitResolutionTransitionCodeDoesNotExist]
            (.) Tomamos esa transicion.
            (.) Para todas las claves en el diccionario que estan en None:
-               (.) La marcamos en joined (inciso E).
+               (.) La marcamos en joined (inciso E), nivel 0.
 
 E. Poner una instancia de curso en JOINED.
 
-   Parametros: instancia de curso, usuario.
+   Parametros: instancia de curso, usuario, nivel de join.
 
    (*) Sabemos que la instancia de curso a poner en joined es consistente.
    (!) Verificamos que la instancia hermana de la actual que lleva dicha clave
        por codigo, tenga un nodo joined.
    (.) Si la instancia de nodo actual en la instancia de curso referencia a un SPLIT:
        (.) Por cada instancia de curso hija:
-           (.) RECURSIVAMENTE las vamos poniendo en joined.
+           (.) RECURSIVAMENTE las vamos poniendo en joined, incrementando en 1 el nivel de join.
    (.) Ponemos la instancia hermana de la actual con dicho codigo
-       en su nodo de tipo JOINED.
+       en su nodo de tipo JOINED, y su nivel de join.
