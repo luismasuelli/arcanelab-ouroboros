@@ -96,7 +96,19 @@ class WorkflowMultiplexerChoseNoTransition(WorkflowMiscException):
     pass
 
 
-class WorkflowSplitResolutionNeedsTransitionCodeMixin(WorkflowMiscException):
+class WorkflowSplitResolutionNeedsTransitionCode(WorkflowMiscException):
+    pass
+
+
+class WorkflowSplitResolutionTransitionCodeDoesNotExist(WorkflowMiscException):
+    pass
+
+
+class WorkflowSplitResolutionTransitionCodeNotUnique(WorkflowMiscException):
+    pass
+
+
+class WorkflowSplitResolutionBadValue(WorkflowMiscException, TypeError):
     pass
 
 
