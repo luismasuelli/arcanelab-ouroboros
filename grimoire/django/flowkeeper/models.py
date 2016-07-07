@@ -92,9 +92,18 @@ class Course(models.Model):
             if self.nodes.filter(type=Node.ENTER).count() != 1:
                 raise ValidationError(_('A workflow course is expected to have exactly one enter node'))
             if self.nodes.filter(type=Node.CANCEL).count() != 1:
-                raise ValidationError(_('A workflow course is expected to have exactly one enter node'))
+                raise ValidationError(_('A workflow course is expected to have exactly one cancel node'))
             if not self.nodes.filter(type=Node.EXIT).exists():
-                raise ValidationError(_('A workflow course is expected to have a least one exit node'))
+                raise ValidationError(_('A workflow course is expected to have at least one exit node'))
+            if self.deph > 0:
+                if self.nodes.filter(type=Node.JOINED).exists():
+                    raise ValidationError(_('A non-root workflow course is expected to have at least one joined node'))
+                if not self.callers.exists() or self.callers.exclude(course__depth__lt=self.depth, type=Node.SPLIT):
+                    raise ValidationError(_('A non-root workflow course is expected to have at least one calling node. '
+                                            'Each calling node must be a split node, and have a lower depth.'))
+            else:
+                if self.callers.exists():
+                    raise ValidationError(_('A root node cannot have callers'))
 
     class Meta:
         verbose_name = _('Course')
@@ -110,6 +119,7 @@ class Node(models.Model):
     ENTER = 'enter'
     EXIT = 'exit'
     CANCEL = 'cancel'
+    JOINED = 'joined'
     INPUT = 'input'
     STEP = 'step'
     MULTIPLEXER = 'multiplexer'
@@ -119,6 +129,7 @@ class Node(models.Model):
         (ENTER, _('Enter')),
         (EXIT, _('Exit')),
         (CANCEL, _('Cancel')),
+        (JOINED, _('Joined')),
         (INPUT, _('Input')),
         (STEP, _('Step')),
         (MULTIPLEXER, _('Multiplexed')),
@@ -159,9 +170,9 @@ class Node(models.Model):
                     raise ValidationError(_('Enter nodes must not have inbound transitions'))
                 if self.outbounds.count() != 1:
                     raise ValidationError(_('Enter nodes must have exactly one outbound transition'))
-            elif self.type == self.CANCEL:
+            elif self.type in (self.CANCEL, self.JOINED):
                 if self.inbounds.exists() or self.outbounds.exists():
-                    raise ValidationError(_('Cancel nodes must not have any transition'))
+                    raise ValidationError(_('Cancel and joined nodes must not have any transition'))
             elif self.type == self.EXIT:
                 if self.outbounds.exists():
                     raise ValidationError(_('Exit nodes must not have outbound transitions'))
