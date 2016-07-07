@@ -128,6 +128,10 @@ class WorkflowInstanceCourseNotRunning(WorkflowMiscException):
     pass
 
 
+class WorkflowInstanceCourseAlreadyTerminated(WorkflowMiscException):
+    pass
+
+
 class WorkflowInstanceCourseNodeDoesNotHaveChildren(WorkflowMiscException):
     pass
 
