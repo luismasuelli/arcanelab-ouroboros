@@ -141,10 +141,13 @@ class WorkflowInstanceCourseNodeInconsistent(WorkflowMiscException):
 
 
 @contextmanager
-def wrap_validation_error(raiser):
+def wrap_validation_error(raiser, extype=None, args=()):
     try:
         yield
     except WorkflowInvalidState:
         raise
     except ValidationError as error:
-        raise WorkflowOtherValidationError, (raiser, error), sys.exc_info()[2]
+        traceback = sys.exc_info()[2]
+        if extype:
+            raise extype, (raiser, error) + tuple(args), traceback
+        raise WorkflowOtherValidationError, (raiser, error), traceback
