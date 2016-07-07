@@ -112,6 +112,14 @@ class WorkflowInstanceCourseNotRunning(WorkflowMiscException):
     pass
 
 
+class WorkflowInstanceCourseNodeDoesNotHaveChildren(WorkflowMiscException):
+    pass
+
+
+class WorkflowInstanceCourseNodeInconsistent(WorkflowMiscException):
+    pass
+
+
 @contextmanager
 def wrap_validation_error(raiser):
     try:
