@@ -1,0 +1,162 @@
+TRANSACCIONALIDAD: TODAS las acciones publicas envuelven de una u otra manera el uso de una
+  transaccion. Las acciones publicas son aquellas que en este documento estan prefijadas con
+  un numero. Las acciones privadas, con una letra. LAS ACCIONES PUBLICAS NO DEBERIAN INVOCARSE
+  ENTRE SI.
+  Por ENVOLVER se entiende que el cuerpo de cada accion esta dentro de un bloque "with atomic()".
+
+1. Como se crea una instancia de workflow.
+
+   Parametros: Workflow a crear, documento para el cual crear el workflow, usuario.
+
+   (!) Verificamos que el workflow tenga exactamente un curso de accion. Sin
+       eso entonces no deberiamos permitir crear la instancia.
+       [WorkflowHasMultipleMainCourses o WorkflowHasNoMainCourse]
+   (!) Verificamos que, si se especifica permiso, el usuario cumpla ese permiso.
+       El permiso se comprueba en el usuario y contra el workflow.
+       [WorkflowCannotInstantiate]
+   (.) Creamos la instancia de workflow.
+   (!) Verificamos datos validos (workflow presente, documento presente).
+       [ValidationError wrappeado]
+   (!) Verificamos que la instancia de workflow logre "aceptar" el documento
+       en base al workflow que le estamos dando.
+       [ValidationError wrappeado]
+   (.) Creamos la instancia de curso de accion del workflow, tomando como
+       referencia el curso de accion principal de dicho workflow, y la
+       instancia del workflow. El curso queda en estado pendiente ya que
+       no sera iniciado automaticamente.
+
+2. Como se inicia un curso de accion en una instancia de workflow.
+
+   Parametros: codigo de curso de accion (en realidad, una cadena tipo codigo1.codigo2... ya
+     que puede haber una cadena aciclica de cursos), usuario.
+   (Contexto de objeto)
+
+   (.) Obtenemos una instancia de curso de accion desde la instancia de workflow dada su
+       cadena solicitada (inciso B).
+   (!) El curso de accion tiene que estar pendiente.
+       [WorkflowInstanceCourseNotPending]
+   (!) Verificamos que el curso de accion tenga un (y solo un) nodo inicial.
+       [ValidationError wrappeado]
+   (!) Verificamos que el nodo inicial tenga una transicion, y esa transicion no sea
+       a si mismo.
+       [ValidationError wrappeado]
+   (.) Tomamos nodo inicial. Tomamos su transicion.
+   (!) Verificamos que, si la transicion requiere un permiso, entonces la instancia lo cumpla.
+       El permiso se comprueba en el usuario y contra la instancia de workflow. Lo normal
+       es que esa verificacion involucre al documento referenciado por la instancia de
+       workflow, pero eso es harina de otro costal.
+       [WorkflowInstanceTransitionDenied]
+   (.) Ejecutamos transicion (inciso A).
+
+3. Como se ejecuta un accion.
+
+   Parametros: codigo de curso de accion (en realidad, una cadena tipo codigo1.codigo2... ya
+     que puede haber una cadena aciclica de cursos), codigo de accion, usuario.
+   (Contexto de objeto)
+
+   (.) Obtenemos una instancia de curso de accion desde la instancia de workflow dada su
+       cadena solicitada (inciso B).
+   (!) Verificamos que la instancia del curso de accion este corriendo (ni pendiente, ni
+       terminado, ni cancelado).
+       [WorkflowInstanceCourseNotRunning]
+   (!) Verificamos que la i. del curso de accion este parado en un nodo, y que ese nodo
+       sea de tipo INPUT. Otros nodos revientan por los siguientes motivos:
+       - Enter, Step, Multiplex: Estos nodos deberian ejecutarse automaticamente.
+       - Cancel, Exit: Desde estos nodos no puede haber ejecucion.
+       - Join: Este nodo tiene caminos paralelos dependientes que tienen que completarse.
+       [ValidationError wrappeado]
+   (!) Verificamos que las transiciones del nodo INPUT actual incluyan una con el nombre
+       elegido.
+       [WorkflowTransitionCodeDoesNotExist o WorkflowTransitionCodeNotUnique]
+   (.) Tomamos esa transicion.
+   (!) Verificamos que, si la transicion requiere un permiso, entonces la instancia lo cumpla.
+       El permiso se comprueba en el usuario y contra la instancia de workflow. Lo normal
+       es que esa verificacion involucre al documento referenciado por la instancia de
+       workflow, pero eso es harina de otro costal.
+       [WorkflowInstanceTransitionDenied]
+   (.) Ejecutamos su transicion (inciso A).
+
+4. Como se cancela un curso de accion.
+   [TO-DO]
+
+5. Como se deja un flujo en un estado consistente.
+   [TO-DO]
+
+A. Como se ejecuta una transicion dentro de una instancia de workflow.
+
+   Parametros: transicion, instancia_curso, usuario.
+   (Contexto de objeto)
+
+   (*) Este metodo NO PROTEGE CONTRA BUCLES INFINITOS por lo que nuestro diseño debe
+       ser lo suficientemente inteligente para no incurrir en uno de ellos.
+   (*) Sabemos que la transicion es un objeto valido. Su origen es un objeto valido.
+       Su nodo de inicio es un INPUT o un ENTER, y el permiso en tal caso ya fue
+       verificado y aprobado antes de llegar a este punto (si es que hubo un permiso).
+       Alternativamente, si cualquier otro tipo de nodo el origen, entonces esta
+       invocacion se hizo con el fin de hacer que el curso se encuentre en un estado
+       consistente (o sea resolviendo splits no resueltos, multiplexers, y pasos).
+   (*) Sabemos que transicion e instancia_curso tienen referencia AL MISMO CURSO.
+   (!) Verificamos que el origen y el destino sean ambos del mismo curso de accion.
+       [ValidationError wrappeado]
+   (!) Verificamos que el destino no sea ENTER ni CANCELADO.
+       [ValidationError wrappeado]
+   (.) nodo = Tomamos el nodo de destino de dicha transicion.
+   (.) curso = Tomamos el curso de dicho nodo.
+   (.) instancia_curso = Tomamos la instancia de curso en el objeto, para <curso>
+   (.) SI nodo es tipo INPUT o EXIT:
+       (.) curso.nodo = instancia de (nodo)
+       (.) salvar curso.nodo y curso
+       (.) DETENERNOS
+           # Para el caso de EXIT, la sola presencia del nodo implica que
+           # se encuentra terminado.
+   (.) SI nodo es tipo SPLIT
+       (!) Verificamos que el nodo tenga al menos dos ramas.
+       [ValidationError wrappeado]
+       instancia_nodo = instancia de (nodo)
+       salvar instancia_nodo
+       instancia_nodo.ramas = [instancia de (curso) por cada curso en nodo.ramas]
+       # seran salvadas MIENTRAS se agregan
+       DETENERNOS
+   (.) SI nodo es tipo PASO:
+       (.) Ejecutamos su callable. Si esto causa una excepcion, esa excepcion no
+           sera atajada y seguira hacia arriba. El callable va a tomar solamente
+           al documento y al usuario. NO va a tomar los objetos de workflow y NO
+           se deberia trabajar con ellos durante este callable.
+           Como estamos dentro de un contexto transaccional, vamos a volver a un
+           estado consistente de todas maneras tras esta explosion.
+       (!) Verificamos que el nodo tenga una y solo una transicion de salida.
+           [ValidationError wrappeado]
+       (.) transicion = tomamos esa transicion de salida.
+       (.) LLAMADA RECURSIVA con transicion, instancia_curso, usuario.
+   (.) SI nodo es tipo MULTIPLEXACION:
+       (.)
+
+B. Obtener una instancia de curso para una instancia de workflow y una cadena jerarquica.
+
+   Parametros: cadena jerarquica.
+   (Contexto de objeto).
+
+   (!) Verificamos que la i. del workflow tenga exactamente una i. de curso de accion principal.
+       Debe ser aquella cuyo curso base sea con depth=0.
+       [WorkflowInstanceHasNoMainCourse]
+   (.) Le pedimos esto a dicha instancia de curso (inciso C).
+
+C. Obtener una instancia de curso para una instancia de curso raiz, y una cadena jerarquica.
+
+   Parametros: cadena jerarquica.
+   (Contexto de objeo).
+
+   (.) SI la cadena esta vacia, devolvemos la instancia de curso actual.
+   (.) SINO:
+       (!) La instancia de nodo actual, en la instancia de curso actual, debe ser
+           tipo split.
+           [WorkflowInstanceCourseNodeDoesNotHaveChildren]
+       (!) La instancia de nodo actual debe tener una instancia de nodo que pertenezca
+           al mismo curso al que pertenece la instancia de curso que lo referencia.
+           [WorkflowInstanceCourseNodeInconsistent]
+       (.) Extraemos cabeza, cola de la lista, rompiendola segun ".".
+           A toooodo esto, cabeza no sera vacia pero cola puede serlo.
+       (!) El nodo referenciado por la instancia de nodo debe tener, entre sus branches,
+           uno -y solo uno- cuyo codigo sea cabeza.
+           [WorkflowCourseCodeDoesNotExist]
+       (.) Tomamos ese nodo, y le pedimos que ejecute este inciso C, con la cola.
