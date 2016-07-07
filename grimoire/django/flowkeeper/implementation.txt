@@ -221,6 +221,8 @@ D. Excitar un join de un nodo split superior, en una instancia de workflow.
            (.) Tomamos esa transicion.
            (.) Para todas las claves en el diccionario que estan en None:
                (.) La marcamos en joined (inciso E), nivel 0.
+           (.) Ejecutamos esa transicion, con su instancia de curso y usuario
+               (inciso A).
 
 E. Poner una instancia de curso en JOINED.
 
@@ -234,3 +236,4 @@ E. Poner una instancia de curso en JOINED.
            (.) RECURSIVAMENTE las vamos poniendo en joined, incrementando en 1 el nivel de join.
    (.) Ponemos la instancia hermana de la actual con dicho codigo
        en su nodo de tipo JOINED, y su nivel de join.
+   (.) salvamos el nodo.
