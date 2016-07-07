@@ -197,6 +197,8 @@ class Node(models.Model):
             else:
                 if self.branches.exists():
                     raise ValidationError(_('Only split nodes can have branches'))
+                if self.joiner:
+                    raise ValidationError(_('Only split nodes can have a joiner'))
 
     class Meta:
         verbose_name = _('Node')
