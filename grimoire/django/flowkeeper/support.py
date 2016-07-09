@@ -1,6 +1,8 @@
 from __future__ import unicode_literals
 from collections import namedtuple
 from contextlib import contextmanager
+from cantrips.functions import is_function
+from functools import wraps
 from django.core.exceptions import ValidationError, PermissionDenied
 import sys
 
@@ -140,14 +142,57 @@ class WorkflowInstanceCourseNodeInconsistent(WorkflowMiscException):
     pass
 
 
+def _default_exfactory(raiser, error):
+    return WorkflowOtherValidationError, (raiser, error)
+
+
 @contextmanager
-def wrap_validation_error(raiser, extype=None, args=()):
+def wrap_validation_error(raiser, exfactory=_default_exfactory):
+    """
+    This context manager catches any exception and, if being
+      a plain validation error, it converts it to another type
+      of exception, which will be given by the exfactory argument.
+
+    This context manager takes the raiser into account (a workflow
+      spec or workflow instance related to the exception).
+    :param raiser: The related object
+    :param exfactory: A function taking the related object and
+      the already thrown ValidationError exception, that will
+      return the parameters needed for the three-args raise.
+    :return: A Context Generator.
+    """
     try:
         yield
     except WorkflowInvalidState:
         raise
     except ValidationError as error:
         traceback = sys.exc_info()[2]
-        if extype:
-            raise extype, (raiser, error) + tuple(args), traceback
-        raise WorkflowOtherValidationError, (raiser, error), traceback
+        klass, args = exfactory(raiser, error)
+        raise klass, args, traceback
+
+
+def wraps_validation_error(function):
+    """
+    This decorator wraps any **method** that will make the resulting
+      function accept an additional keyword argument (exfactory) and
+      will call -if such argument is used- `wrap_validation_error`
+      wrapping the execution of the decorated function. Such wrapper
+      takes the self into account, and that's the reason why this
+      decorator is intended only for methods.
+    :param function:
+    :return:
+    """
+    @wraps(function)
+    def wrapper(self, *args, **kwargs):
+        exfactory = kwargs.pop('exfactory', False)
+        if exfactory is True:
+            with wrap_validation_error(self):
+                return function(self, *args, **kwargs)
+        elif is_function(exfactory):
+            with wrap_validation_error(self, exfactory):
+                return function(self, *args, **kwargs)
+        elif exfactory is False:
+            return function(*args, **kwargs)
+        else:
+            raise TypeError('Invalid value for exfactory. Expected a boolean value or a function')
+    return wrapper
