@@ -1,9 +1,10 @@
 from __future__ import unicode_literals
 from django.contrib.contenttypes.fields import GenericForeignKey
-from django.db import models
+from django.db import models, transaction
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.contenttypes.models import ContentType
+from grimoire.django.tracked.models import TrackedLive
 from .fields import CallableReferenceField
 from .support import (
     wraps_validation_error, WorkflowHasMultipleMainCourses, WorkflowInvalidState, WorkflowHasNoMainCourse,
@@ -85,12 +86,31 @@ class Workflow(models.Model):
 
     def clean(self, keep=True):
         """
-        TODO a workflow must validate by having:
+        A workflow must validate by having:
         - Exactly one parent Course.
         """
 
         if self.pk:
             self.verify_exactly_one_parent_course(keep=keep)
+
+    @transaction.atomic
+    def instantiate(self, user, document):
+        """
+        Creates and saves a workflow instance, given a document and a user.
+
+        :param user: The user, which must have permission to instantiate the workflow, if required.
+        :param document: A document suitable for this workflow.
+        :return: The created instance.
+        """
+
+        self.clean(keep=False)
+        self.verify_can_create_workflow(user)
+        instance = WorkflowInstance(workflow=self, document=document)
+        instance.clean_fields()
+        instance.validate_unique()
+        instance.clean(keep=False)
+        instance.save()
+        # TODO create main action course.
 
     class Meta:
         verbose_name = _('Workflow')
@@ -367,18 +387,22 @@ class Transition(models.Model):
 ####################################################
 
 
-class WorkflowInstance(models.Model):
+class WorkflowInstance(TrackedLive):
 
     workflow = models.ForeignKey(Workflow, blank=False, null=False, on_delete=models.CASCADE, related_name='instances')
     content_type = models.ForeignKey(ContentType, blank=False, null=False, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField(blank=False, null=False)
     document = GenericForeignKey('content_type', 'object_id')
 
-    def clean(self):
+    def clean(self, keep=True):
         """
         content_type must match workflow's expected content_type
         """
 
+        self.verify_accepts_document(keep=keep)
+
+    @wraps_validation_error
+    def verify_accepts_document(self):
         try:
             if self.content_type != self.workflow.document_type:
                 raise ValidationError(_('Workflow instances must reference documents with expected class '
