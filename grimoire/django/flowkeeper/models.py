@@ -103,7 +103,7 @@ class Workflow(models.Model):
         :return: The created instance.
         """
 
-        self.save() # Since this runs inside a transaction, we will call clean() later and will revert on exception.
+        self.save()  # Since this runs inside a transaction, we will call clean() later and will revert on exception.
         self.clean(keep=False)
         self.verify_can_create_workflow(user)
         instance = WorkflowInstance(workflow=self, document=document)
@@ -114,6 +114,7 @@ class Workflow(models.Model):
         main_course_instance = CourseInstance(workflow_instance=instance, course=self.courses.get(depth=0))
         main_course_instance.clean_fields()
         main_course_instance.validate_unique()
+        main_course_instance.clean(keep=False)
         main_course_instance.save()
         return instance
 
