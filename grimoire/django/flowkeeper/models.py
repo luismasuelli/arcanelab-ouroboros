@@ -5,7 +5,8 @@ from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.contenttypes.models import ContentType
 from .fields import CallableReferenceField
-from .support import wraps_validation_error
+from .support import wraps_validation_error, WorkflowHasMultipleMainCourses, WorkflowInvalidState, \
+    WorkflowHasNoMainCourse
 
 
 def valid_document_type(value):
@@ -26,6 +27,15 @@ class WorkflowManager(models.Manager):
 
     def get_by_natural_key(self, code):
         return self.get(code=code)
+
+
+def _workflow_verify_main_course(raiser, error):
+    if error.code == 'not-exists':
+        return WorkflowHasNoMainCourse, (raiser, error)
+    elif error.code == 'not-unique':
+        return WorkflowHasMultipleMainCourses, (raiser, error)
+    else:
+        return WorkflowInvalidState, (raiser, error)
 
 
 class Workflow(models.Model):
@@ -49,10 +59,18 @@ class Workflow(models.Model):
     def natural_key(self):
         return self.code
 
-    @wraps_validation_error
+    @wraps_validation_error(_workflow_verify_main_course)
     def verify_exactly_one_parent_course(self):
-        if not self.courses.filter(depth=0).exists():
-            raise ValidationError(_('Workflows must have exactly one parent course'))
+        """
+        Verifies only one course for the workflow.
+        :return:
+        """
+        count = self.courses.filter(depth=0).count()
+        if count == 0:
+            raise ValidationError(_('No main course is defined for the workflow (expected one)'), code='not-exists')
+        if count > 1:
+            raise ValidationError(_('Multiple main courses are defined for the workflow (expected one)'),
+                                  code='not-unique')
 
     def clean(self):
         """
@@ -61,7 +79,7 @@ class Workflow(models.Model):
         """
 
         if self.pk:
-            self.verify_exactly_one_parent_course()
+            self.verify_exactly_one_parent_course(keep=True)
 
     class Meta:
         verbose_name = _('Workflow')

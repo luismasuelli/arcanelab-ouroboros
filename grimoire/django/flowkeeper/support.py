@@ -4,6 +4,7 @@ from contextlib import contextmanager
 from cantrips.functions import is_function
 from functools import wraps
 from django.core.exceptions import ValidationError, PermissionDenied
+from cantrips.decorators import customizable
 import sys
 
 
@@ -171,28 +172,43 @@ def wrap_validation_error(raiser, exfactory=_default_exfactory):
         raise klass, args, traceback
 
 
-def wraps_validation_error(function):
+def _wraps_validation_error(function, wrapper):
     """
     This decorator wraps any **method** that will make the resulting
-      function accept an additional keyword argument (wrapper) and
+      function accept an additional keyword argument (keep) and
       will call -if such argument is used- `wrap_validation_error`
       wrapping the execution of the decorated function. Such wrapper
       takes the self into account, and that's the reason why this
       decorator is intended only for methods.
+
+    This decorator is used either as:
+
+        @wraps_validation_error
+        def mymethod(self, foo, bar, ...):
+            ...
+
+    Or
+
+        @wraps_validation_error(a_wrapper_function)
+        def mymethod(self, foo, bar, ...):
+            ...
+
+    By default, @wraps_validation_error uses a wrapper function converting
+      the ValidationError in a WorkflowInvalidState.
+
+    By default, the resulting function will invoke the wrapping. To retrieve
+      the original ValidationError, invoke the resulting function with
+      argument keep=True,
     :param function:
     :return:
     """
     @wraps(function)
     def wrapper(self, *args, **kwargs):
-        exfactory = kwargs.pop('wrapper', False)
-        if exfactory is True:
-            with wrap_validation_error(self):
-                return function(self, *args, **kwargs)
-        elif is_function(exfactory):
-            with wrap_validation_error(self, exfactory):
-                return function(self, *args, **kwargs)
-        elif exfactory is False:
-            return function(*args, **kwargs)
+        keep = kwargs.pop('keep', False)
+        if keep:
+            return function(self, *args, **kwargs)
         else:
-            raise TypeError('Invalid value for exfactory. Expected a boolean value or a function')
+            with wrap_validation_error(self, wrapper):
+                return function(self, *args, **kwargs)
     return wrapper
+wraps_validation_error = customizable(_wraps_validation_error, wrapper=_default_exfactory)
