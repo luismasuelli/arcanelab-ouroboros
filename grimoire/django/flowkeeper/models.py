@@ -8,7 +8,7 @@ from grimoire.django.tracked.models import TrackedLive
 from .fields import CallableReferenceField
 from .support import (
     wraps_validation_error, WorkflowHasMultipleMainCourses, WorkflowInvalidState, WorkflowHasNoMainCourse,
-    WorkflowCannotInstantiate
+    WorkflowCannotInstantiate, WorkflowInstanceCourseInconsistent
 )
 
 
@@ -476,6 +476,17 @@ class CourseInstance(TrackedLive):
         except NodeInstance.DoesNotExist:
             return False
 
+    @wraps_validation_error(lambda raiser, error: WorkflowInstanceCourseInconsistent(raiser))
+    def verify_consistent_workflow(self):
+        if self.course.workflow != self.workflow_instance.workflow:
+            raise ValidationError(_('Referenced course and instance do not refer the same workflow'))
+
+    def clean(self, keep=False):
+        """
+        Cleans consistency
+        """
+        self.verify_consistent_workflow(keep=keep)
+
 
 class NodeInstance(TrackedLive):
     """
@@ -487,3 +498,4 @@ class NodeInstance(TrackedLive):
 
     course_instance = models.OneToOneField(CourseInstance, related_name='node', null=False, blank=False)
     node = models.ForeignKey(Node, related_name='+', null=False, blank=False)
+
