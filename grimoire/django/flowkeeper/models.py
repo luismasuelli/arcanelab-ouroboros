@@ -417,13 +417,73 @@ class WorkflowInstance(TrackedLive):
         verbose_name_plural = _('Workflow Instances')
 
 
-# class CourseInstance(models.Model):
-#
-#     workflow_instance = models.ForeignKey(WorkflowInstance, null=False, blank=False, on_delete=models.CASCADE)
-#     parent = models.ForeignKey('NodeInstance', null=False, blank=False, on_delete=models.CASCADE)
-#     course = models.ForeignKey(Course, null=False, blank=False, on_delete=models.CASCADE)
+class CourseInstance(TrackedLive):
+    """
+    An instance of a course, referencing an instance of a workflow.
+
+    The related course and workflow instance must be consistent on referencing
+      the same workflow.
+    """
+
+    workflow_instance = models.ForeignKey(WorkflowInstance, null=False, blank=False, on_delete=models.CASCADE)
+    parent = models.ForeignKey('NodeInstance', related_name='branches', null=True, blank=True, on_delete=models.CASCADE)
+    course = models.ForeignKey(Course, null=False, blank=False, on_delete=models.CASCADE)
+
+    @property
+    def pending(self):
+        try:
+            node = self.node
+            return False
+        except NodeInstance.DoesNotExist:
+            return True
+
+    @property
+    def waiting(self):
+        try:
+            return self.node.type == Node.INPUT
+        except NodeInstance.DoesNotExist:
+            return False
+
+    @property
+    def cancelled(self):
+        try:
+            return self.node.type == Node.CANCEL
+        except NodeInstance.DoesNotExist:
+            return False
+
+    @property
+    def ended(self):
+        try:
+            return self.node.type == Node.EXIT
+        except NodeInstance.DoesNotExist:
+            return False
+
+    @property
+    def splitting(self):
+        try:
+            return self.node.type == Node.SPLIT
+        except NodeInstance.DoesNotExist:
+            return False
+
+    @property
+    def drifting(self):
+        """
+        These nodes are invalid states! A workflow course instance is not expected
+          to step on these nodes!.
+        """
+        try:
+            return self.node.type in (Node.ENTER, Node.MULTIPLEXER, Node.STEP)
+        except NodeInstance.DoesNotExist:
+            return False
 
 
-# class NodeInstance(models.Model):
-#
-#     pass
+class NodeInstance(TrackedLive):
+    """
+    An instance of a node, referencing an instance of a course..
+
+    The related node and course instance must be consistent on referencing the
+      same course. The related branches must also be consistent.
+    """
+
+    course_instance = models.OneToOneField(CourseInstance, related_name='node', null=False, blank=False)
+    node = models.ForeignKey(Node, related_name='+', null=False, blank=False)
