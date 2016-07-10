@@ -174,7 +174,7 @@ def wrap_validation_error(raiser, exfactory=_default_exfactory):
 def wraps_validation_error(function):
     """
     This decorator wraps any **method** that will make the resulting
-      function accept an additional keyword argument (exfactory) and
+      function accept an additional keyword argument (wrapper) and
       will call -if such argument is used- `wrap_validation_error`
       wrapping the execution of the decorated function. Such wrapper
       takes the self into account, and that's the reason why this
@@ -184,7 +184,7 @@ def wraps_validation_error(function):
     """
     @wraps(function)
     def wrapper(self, *args, **kwargs):
-        exfactory = kwargs.pop('exfactory', False)
+        exfactory = kwargs.pop('wrapper', False)
         if exfactory is True:
             with wrap_validation_error(self):
                 return function(self, *args, **kwargs)
