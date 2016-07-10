@@ -5,8 +5,10 @@ from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.contenttypes.models import ContentType
 from .fields import CallableReferenceField
-from .support import wraps_validation_error, WorkflowHasMultipleMainCourses, WorkflowInvalidState, \
-    WorkflowHasNoMainCourse
+from .support import (
+    wraps_validation_error, WorkflowHasMultipleMainCourses, WorkflowInvalidState, WorkflowHasNoMainCourse,
+    WorkflowCannotInstantiate
+)
 
 
 def valid_document_type(value):
@@ -72,14 +74,23 @@ class Workflow(models.Model):
             raise ValidationError(_('Multiple main courses are defined for the workflow (expected one)'),
                                   code='not-unique')
 
-    def clean(self):
+    def verify_can_create_workflow(self, user):
+        """
+        Verifies that the user can create a workflow instance.
+        :param user:
+        :return:
+        """
+        if self.permission and not user.has_perm(self.permission):
+            raise WorkflowCannotInstantiate(self)
+
+    def clean(self, keep=True):
         """
         TODO a workflow must validate by having:
         - Exactly one parent Course.
         """
 
         if self.pk:
-            self.verify_exactly_one_parent_course(keep=True)
+            self.verify_exactly_one_parent_course(keep=keep)
 
     class Meta:
         verbose_name = _('Workflow')
