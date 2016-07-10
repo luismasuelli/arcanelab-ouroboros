@@ -5,6 +5,7 @@ from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.contenttypes.models import ContentType
 from .fields import CallableReferenceField
+from .support import wraps_validation_error
 
 
 def valid_document_type(value):
@@ -48,6 +49,11 @@ class Workflow(models.Model):
     def natural_key(self):
         return self.code
 
+    @wraps_validation_error
+    def verify_exactly_one_parent_course(self):
+        if not self.courses.filter(depth=0).exists():
+            raise ValidationError(_('Workflows must have exactly one parent course'))
+
     def clean(self):
         """
         TODO a workflow must validate by having:
@@ -55,8 +61,7 @@ class Workflow(models.Model):
         """
 
         if self.pk:
-            if not self.courses.filter(depth=0).exists():
-                raise ValidationError(_('Workflows must have at least one parent course'))
+            self.verify_exactly_one_parent_course()
 
     class Meta:
         verbose_name = _('Workflow')
