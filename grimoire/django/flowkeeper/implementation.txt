@@ -8,22 +8,22 @@ TRANSACCIONALIDAD: TODAS las acciones publicas envuelven de una u otra manera el
 
    Parametros: Workflow a crear, documento para el cual crear el workflow, usuario.
 
-   (!) Verificamos que el workflow tenga exactamente un curso de accion. Sin
-       eso entonces no deberiamos permitir crear la instancia.
-       [WorkflowHasMultipleMainCourses o WorkflowHasNoMainCourse]
-   (!) Verificamos que, si se especifica permiso, el usuario cumpla ese permiso.
-       El permiso se comprueba en el usuario y contra el workflow.
-       [WorkflowCannotInstantiate]
-   (.) Creamos la instancia de workflow.
-   (!) Verificamos datos validos (workflow presente, documento presente).
-       [ValidationError wrappeado]
-   (!) Verificamos que la instancia de workflow logre "aceptar" el documento
-       en base al workflow que le estamos dando.
-       [ValidationError wrappeado]
-   (.) Creamos la instancia de curso de accion del workflow, tomando como
-       referencia el curso de accion principal de dicho workflow, y la
-       instancia del workflow. El curso queda en estado pendiente ya que
-       no sera iniciado automaticamente.
+   (!*) Verificamos que el workflow tenga exactamente un curso de accion. Sin
+        eso entonces no deberiamos permitir crear la instancia.
+        [WorkflowHasMultipleMainCourses o WorkflowHasNoMainCourse]
+   (!*) Verificamos que, si se especifica permiso, el usuario cumpla ese permiso.
+        El permiso se comprueba en el usuario y contra el workflow.
+        [WorkflowCannotInstantiate]
+   (.*) Creamos la instancia de workflow.
+   (!*) Verificamos datos validos (workflow presente, documento presente).
+        [ValidationError wrappeado]
+   (!*) Verificamos que la instancia de workflow logre "aceptar" el documento
+        en base al workflow que le estamos dando.
+        [ValidationError wrappeado]
+   (.*) Creamos la instancia de curso de accion del workflow, tomando como
+        referencia el curso de accion principal de dicho workflow, y la
+        instancia del workflow. El curso queda en estado pendiente ya que
+        no sera iniciado automaticamente.
 
 2. Como se inicia un curso de accion en una instancia de workflow.
 
