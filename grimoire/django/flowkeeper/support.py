@@ -139,6 +139,10 @@ class WorkflowInstanceCourseNodeDoesNotHaveChildren(WorkflowMiscException):
     pass
 
 
+class WorkflowInstanceCourseInconsistent(WorkflowMiscException):
+    pass
+
+
 class WorkflowInstanceCourseNodeInconsistent(WorkflowMiscException):
     pass
 
