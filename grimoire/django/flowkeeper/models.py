@@ -8,7 +8,8 @@ from grimoire.django.tracked.models import TrackedLive
 from .fields import CallableReferenceField
 from .support import (
     wraps_validation_error, WorkflowHasMultipleMainCourses, WorkflowInvalidState, WorkflowHasNoMainCourse,
-    WorkflowCannotInstantiate, WorkflowInstanceCourseInconsistent
+    WorkflowCannotInstantiate, WorkflowInstanceCourseInconsistent, WorkflowInstanceHasNoMainCourse,
+    WorkflowInstanceHasMultipleMainCourses
 )
 
 
@@ -393,6 +394,15 @@ class Transition(models.Model):
 ####################################################
 
 
+def _workflow_instance_verify_main_course(raiser, error):
+    if error.code == 'not-exists':
+        return WorkflowInstanceHasNoMainCourse, (raiser, error)
+    elif error.code == 'not-unique':
+        return WorkflowInstanceHasMultipleMainCourses, (raiser, error)
+    else:
+        return WorkflowInvalidState, (raiser, error)
+
+
 class WorkflowInstance(TrackedLive):
 
     workflow = models.ForeignKey(Workflow, blank=False, null=False, on_delete=models.CASCADE, related_name='instances')
@@ -406,6 +416,8 @@ class WorkflowInstance(TrackedLive):
         """
 
         self.verify_accepts_document(keep=keep)
+        if self.pk:
+            self.verify_exactly_one_parent_course(keep=keep)
 
     @wraps_validation_error
     def verify_accepts_document(self):
@@ -417,6 +429,16 @@ class WorkflowInstance(TrackedLive):
                 ))
         except ObjectDoesNotExist:
             pass
+
+    @wraps_validation_error(_workflow_instance_verify_main_course)
+    def verify_exactly_one_parent_course(self):
+        count = self.courses.filter(parent__isnull=True).count()
+        if count == 0:
+            raise ValidationError(_('No main course is present for the workflow instance (expected one)'),
+                                  code='not-exists')
+        if count > 1:
+            raise ValidationError(_('Multiple main courses are present for the workflow instance (expected one)'),
+                                  code='not-unique')
 
     class Meta:
         verbose_name = _('Workflow Instance')
@@ -431,7 +453,8 @@ class CourseInstance(TrackedLive):
       the same workflow.
     """
 
-    workflow_instance = models.ForeignKey(WorkflowInstance, null=False, blank=False, on_delete=models.CASCADE)
+    workflow_instance = models.ForeignKey(WorkflowInstance, related_name='courses', null=False, blank=False,
+                                          on_delete=models.CASCADE)
     parent = models.ForeignKey('NodeInstance', related_name='branches', null=True, blank=True, on_delete=models.CASCADE)
     course = models.ForeignKey(Course, null=False, blank=False, on_delete=models.CASCADE)
 
