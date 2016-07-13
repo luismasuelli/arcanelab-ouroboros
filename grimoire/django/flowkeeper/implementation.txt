@@ -167,30 +167,29 @@ B. Obtener una instancia de curso para una instancia de workflow y una cadena je
    Parametros: cadena jerarquica.
    (Contexto de objeto).
 
-   (!) Verificamos que la i. del workflow tenga exactamente una i. de curso de accion principal.
-       Debe ser aquella cuyo curso base sea con depth=0.
-       [WorkflowInstanceHasNoMainCourse]
-   (.) Le pedimos esto a dicha instancia de curso (inciso C).
+   (!*) Verificamos que la i. del workflow tenga exactamente una i. de curso de accion principal.
+        Debe ser aquella cuyo curso base sea con depth=0.
+        [WorkflowInstanceHasNoMainCourse]
+   (.*) Le pedimos esto a dicha instancia de curso (inciso C).
 
 C. Obtener una instancia de curso para una instancia de curso raiz, y una cadena jerarquica.
 
    Parametros: cadena jerarquica.
    (Contexto de objeo).
 
-   (.) SI la cadena esta vacia, devolvemos la instancia de curso actual.
-   (.) SINO:
-       (!) La instancia de nodo actual, en la instancia de curso actual, debe ser
-           tipo split.
-           [WorkflowInstanceCourseNodeDoesNotHaveChildren]
-       (!) La instancia de nodo actual debe tener una instancia de nodo que pertenezca
-           al mismo curso al que pertenece la instancia de curso que lo referencia.
-           [WorkflowInstanceCourseNodeInconsistent]
-       (.) Extraemos cabeza, cola de la lista, rompiendola segun ".".
-           A toooodo esto, cabeza no sera vacia pero cola puede serlo.
-       (!) El nodo referenciado por la instancia de nodo debe tener, entre sus branches,
-           uno -y solo uno- cuyo codigo sea cabeza.
-           [WorkflowCourseCodeDoesNotExist]
-       (.) Tomamos ese nodo, y le pedimos que ejecute este inciso C, con la cola.
+   (.*) SI la cadena esta vacia, devolvemos la instancia de curso actual.
+   (.*) SINO:
+        (!*) La instancia de nodo actual, en la instancia de curso actual, debe ser tipo split.
+             [WorkflowInstanceCourseNodeDoesNotHaveChildren]
+        (!*) La instancia de nodo actual debe tener una instancia de nodo que pertenezca
+             al mismo curso al que pertenece la instancia de curso que lo referencia.
+             [WorkflowInstanceCourseNodeInconsistent]
+        (.*) Extraemos cabeza, cola de la lista, rompiendola segun ".".
+             A toooodo esto, cabeza no sera vacia pero cola puede serlo.
+        (!*) El nodo referenciado por la instancia de nodo debe tener, entre sus branches,
+             uno -y solo uno- cuyo codigo sea cabeza.
+             [WorkflowCourseCodeDoesNotExist]
+        (.) Tomamos ese nodo, y le pedimos que ejecute este inciso C, con la cola.
 
 D. Excitar un join de un nodo split superior, en una instancia de workflow.
 

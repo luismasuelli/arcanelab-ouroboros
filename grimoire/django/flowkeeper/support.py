@@ -95,6 +95,14 @@ class WorkflowCourseCodeDoesNotExist(WorkflowMiscException):
     pass
 
 
+class WorkflowInstanceCourseCodeDoesNotExist(WorkflowMiscException):
+    pass
+
+
+class WorkflowInstanceCourseCodeMultipleTimes(WorkflowMiscException):
+    pass
+
+
 class WorkflowMultiplexerChoseNoTransition(WorkflowMiscException):
     pass
 

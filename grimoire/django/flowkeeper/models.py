@@ -10,7 +10,8 @@ from .support import (
     wraps_validation_error, WorkflowHasMultipleMainCourses, WorkflowInvalidState, WorkflowHasNoMainCourse,
     WorkflowCannotInstantiate, WorkflowInstanceCourseInconsistent, WorkflowInstanceHasNoMainCourse,
     WorkflowInstanceHasMultipleMainCourses, WorkflowInstanceCourseNodeDoesNotHaveChildren,
-    WorkflowInstanceCourseNodeInconsistent, WorkflowCourseCodeDoesNotExist
+    WorkflowInstanceCourseNodeInconsistent, WorkflowCourseCodeDoesNotExist,
+    WorkflowInstanceCourseCodeMultipleTimes
 )
 
 
@@ -479,6 +480,8 @@ class CourseInstance(TrackedLive):
                 return self.node.branches.get(course__code=head)._get_course_by_path(tail)
             except NodeInstance.DoesNotExist:
                 raise WorkflowCourseCodeDoesNotExist(self, head)
+            except NodeInstance.MultipleObjectsReturned:
+                raise WorkflowInstanceCourseCodeMultipleTimes(self, head)
 
     @property
     def pending(self):
