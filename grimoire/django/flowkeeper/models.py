@@ -9,7 +9,8 @@ from .fields import CallableReferenceField
 from .support import (
     wraps_validation_error, WorkflowHasMultipleMainCourses, WorkflowInvalidState, WorkflowHasNoMainCourse,
     WorkflowCannotInstantiate, WorkflowInstanceCourseInconsistent, WorkflowInstanceHasNoMainCourse,
-    WorkflowInstanceHasMultipleMainCourses
+    WorkflowInstanceHasMultipleMainCourses, WorkflowInstanceCourseNodeDoesNotHaveChildren,
+    WorkflowInstanceCourseNodeInconsistent, WorkflowCourseCodeDoesNotExist
 )
 
 
@@ -440,6 +441,10 @@ class WorkflowInstance(TrackedLive):
             raise ValidationError(_('Multiple main courses are present for the workflow instance (expected one)'),
                                   code='not-unique')
 
+    def _get_course_by_path(self, path):
+        self.verify_exactly_one_parent_course()
+        return self.courses.get(parent__isnull=True)._get_course_by_path(path)
+
     class Meta:
         verbose_name = _('Workflow Instance')
         verbose_name_plural = _('Workflow Instances')
@@ -457,6 +462,23 @@ class CourseInstance(TrackedLive):
                                           on_delete=models.CASCADE)
     parent = models.ForeignKey('NodeInstance', related_name='branches', null=True, blank=True, on_delete=models.CASCADE)
     course = models.ForeignKey(Course, null=False, blank=False, on_delete=models.CASCADE)
+
+    def _get_course_by_path(self, path):
+        if path == '':
+            return self
+        elif not self.splitting:
+            raise WorkflowInstanceCourseNodeDoesNotHaveChildren(self)
+        else:
+            self.node.verify_consistent_course()
+            parts = path.split('.', 1)
+            if len(parts) == 1:
+                head, tail = parts[0], ''
+            else:
+                head, tail = parts
+            try:
+                return self.node.branches.get(course__code=head)._get_course_by_path(tail)
+            except NodeInstance.DoesNotExist:
+                raise WorkflowCourseCodeDoesNotExist(self, head)
 
     @property
     def pending(self):
@@ -528,3 +550,13 @@ class NodeInstance(TrackedLive):
     course_instance = models.OneToOneField(CourseInstance, related_name='node', null=False, blank=False)
     node = models.ForeignKey(Node, related_name='+', null=False, blank=False)
 
+    @wraps_validation_error(lambda raiser, error: WorkflowInstanceCourseNodeInconsistent(raiser))
+    def verify_consistent_course(self):
+        if self.node.course != self.course_instance.course:
+            raise ValidationError(_('Referenced node and course instance do not refer the same course'))
+
+    def clean(self, keep=False):
+        """
+        Cleans consistency
+        """
+        self.verify_consistent_course(keep=keep)
