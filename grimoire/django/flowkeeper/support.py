@@ -95,7 +95,15 @@ class WorkflowCourseCodeDoesNotExist(WorkflowMiscException):
     pass
 
 
+class WorkflowCourseNodeCodeDoesNotExist(WorkflowMiscException):
+    pass
+
+
 class WorkflowInstanceCourseCodeDoesNotExist(WorkflowMiscException):
+    pass
+
+
+class WorkflowInstanceCourseNodeCannotBeForeign(WorkflowMiscException):
     pass
 
 

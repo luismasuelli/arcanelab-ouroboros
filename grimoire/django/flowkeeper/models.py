@@ -5,13 +5,14 @@ from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.contenttypes.models import ContentType
 from grimoire.django.tracked.models import TrackedLive
+from django.utils.six import string_types
 from .fields import CallableReferenceField
 from .support import (
     wraps_validation_error, WorkflowHasMultipleMainCourses, WorkflowInvalidState, WorkflowHasNoMainCourse,
     WorkflowCannotInstantiate, WorkflowInstanceCourseInconsistent, WorkflowInstanceHasNoMainCourse,
     WorkflowInstanceHasMultipleMainCourses, WorkflowInstanceCourseNodeDoesNotHaveChildren,
-    WorkflowInstanceCourseNodeInconsistent, WorkflowCourseCodeDoesNotExist,
-    WorkflowInstanceCourseCodeMultipleTimes
+    WorkflowInstanceCourseNodeInconsistent, WorkflowCourseCodeDoesNotExist, WorkflowCourseNodeCodeDoesNotExist,
+    WorkflowInstanceCourseCodeMultipleTimes, WorkflowInstanceCourseNodeCannotBeForeign
 )
 
 
@@ -463,6 +464,25 @@ class CourseInstance(TrackedLive):
                                           on_delete=models.CASCADE)
     parent = models.ForeignKey('NodeInstance', related_name='branches', null=True, blank=True, on_delete=models.CASCADE)
     course = models.ForeignKey(Course, null=False, blank=False, on_delete=models.CASCADE)
+
+    def _move(self, node):
+        """
+        Moves the course to a new node. Checks existence (if node code specified) or consistency
+          (if node instance specified).
+        :param node: The node instance or code to move this course instance.
+        :return: The new node instance.
+        """
+
+        if isinstance(node, string_types):
+            try:
+                node = self.course.nodes.get(code=node)
+            except Node.DoesNotExist:
+                raise WorkflowCourseNodeCodeDoesNotExist(self, node)
+        else:
+            if node.course != self.course:
+                raise WorkflowInstanceCourseNodeCannotBeForeign(self, node)
+        self.node.delete()
+        return NodeInstance.objects.create(course_instance=self, node=node)
 
     def _get_course_by_path(self, path):
         if path == '':
