@@ -618,15 +618,17 @@ class CourseInstance(TrackedLive):
             return False
 
     @wraps_validation_error(lambda raiser, error: WorkflowInstanceCourseInconsistent(raiser))
-    def verify_consistent_workflow(self):
+    def verify_consistent_course(self):
         if self.course.workflow != self.workflow_instance.workflow:
             raise ValidationError(_('Referenced course and instance do not refer the same workflow'))
+        if self.parent and self.parent.course_instance not in self.course.callers.all():
+            raise ValidationError(_('Referenced course and parent node instance\'s course are not the same'))
 
     def clean(self, keep=False):
         """
         Cleans consistency
         """
-        self.verify_consistent_workflow(keep=keep)
+        self.verify_consistent_course(keep=keep)
 
 
 class NodeInstance(TrackedLive):
