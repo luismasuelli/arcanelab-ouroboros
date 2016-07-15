@@ -189,7 +189,7 @@ C. Obtener una instancia de curso para una instancia de curso raiz, y una cadena
         (!*) El nodo referenciado por la instancia de nodo debe tener, entre sus branches,
              uno -y solo uno- cuyo codigo sea cabeza.
              [WorkflowCourseCodeDoesNotExist]
-        (.) Tomamos ese nodo, y le pedimos que ejecute este inciso C, con la cola.
+        (.*) Tomamos ese nodo, y le pedimos que ejecute este inciso C, con la cola.
 
 D. Excitar un join de un nodo split superior, en una instancia de workflow.
 
@@ -247,16 +247,16 @@ E. Poner una instancia de curso en JOINED.
    Parametros: instancia de curso, usuario, nivel de join.
 
    (*) Sabemos que la instancia de curso a poner en joined es consistente.
-   (!) Verificamos que la instancia hermana de la actual que lleva dicha clave
-       por codigo, tenga un nodo joined.
-   (.) Si la instancia de nodo actual en la instancia de curso referencia a un SPLIT:
-       (.) Por cada instancia de curso hija:
-           (.) RECURSIVAMENTE las vamos poniendo en joined, incrementando en 1 el nivel de join.
-   (.) Ponemos la instancia hermana de la actual con dicho codigo en su nodo de tipo
-       JOINED, y su nivel de join.
-   (.) salvamos el nodo.
+   (!*) Verificamos que la instancia hermana de la actual que lleva dicha clave
+        por codigo, tenga un nodo joined.
+   (.*) Si la instancia de nodo actual en la instancia de curso referencia a un SPLIT:
+       (.*) Por cada instancia de curso hija:
+           (.*) RECURSIVAMENTE las vamos poniendo en joined, incrementando en 1 el nivel de join.
+   (.*) Ponemos la instancia hermana de la actual con dicho codigo en su nodo de tipo
+        JOINED, y su nivel de join.
+   (.*) salvamos el nodo.
 
 F. Poner una instancia de curso en CANCELLED.
 
-   Funciona analogo al JOINED pero el estado es CANCELLED.
-   El mismo campo de nivel que en join se usa, pero para indicar nivel de cancelacion.
+   (.*) Funciona analogo al JOINED pero el estado es CANCELLED.
+        El mismo campo de nivel que en join se usa, pero para indicar nivel de cancelacion.

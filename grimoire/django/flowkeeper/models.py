@@ -163,10 +163,11 @@ class Course(models.Model):
 
     @wraps_validation_error(_workflow_course_has_node_of_type)
     def _verify_has_node_of_type(self, node_type, msg):
-        count = self.nodes.filter(type=node_type).count()
-        if count > 1:
+        try:
+            return self.nodes.get(type=node_type)
+        except Node.DoesNotExist:
             raise ValidationError(msg, code='not-exists')
-        elif count == 0:
+        except Node.MultipleObjectsReturned:
             raise ValidationError(msg, code='not-unique')
 
     def verify_has_cancel_node(self, keep=False):
@@ -489,6 +490,33 @@ class CourseInstance(TrackedLive):
                                           on_delete=models.CASCADE)
     parent = models.ForeignKey('NodeInstance', related_name='branches', null=True, blank=True, on_delete=models.CASCADE)
     course = models.ForeignKey(Course, null=False, blank=False, on_delete=models.CASCADE)
+    term_level = models.PositiveIntegerField(null=True, blank=True)
+
+    def _cancel(self, level=0):
+        if self.terminated:
+            return
+        node = self.course.verify_has_cancel_node()
+        self.term_level = level
+        self.save()
+        if self.splitting:
+            next_level = level + 1
+            for branch in self.node.branches.all():
+                branch._cancel(next_level)
+        self._move(node)
+
+    def _join(self, level=0):
+        if self.terminated:
+            return
+        node = self.course.verify_has_joined_node()
+        if not node:
+            raise WorkflowInvalidState(self, _('This course is not joinable'))
+        self.term_level = level
+        self.save()
+        if self.splitting:
+            next_level = level + 1
+            for branch in self.node.branches.all():
+                branch._join(next_level)
+        self._move(node)
 
     def _move(self, node):
         """
@@ -561,6 +589,20 @@ class CourseInstance(TrackedLive):
     def splitting(self):
         try:
             return self.node.type == Node.SPLIT
+        except NodeInstance.DoesNotExist:
+            return False
+
+    @property
+    def joined(self):
+        try:
+            return self.node.type == Node.JOINED
+        except NodeInstance.DoesNotExist:
+            return False
+
+    @property
+    def terminated(self):
+        try:
+            return self.node.type in (Node.JOINED, Node.EXIT, Node.CANCEL)
         except NodeInstance.DoesNotExist:
             return False
 
