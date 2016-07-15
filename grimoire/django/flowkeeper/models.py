@@ -12,7 +12,8 @@ from .support import (
     WorkflowCannotInstantiate, WorkflowInstanceCourseInconsistent, WorkflowInstanceHasNoMainCourse,
     WorkflowInstanceHasMultipleMainCourses, WorkflowInstanceCourseNodeDoesNotHaveChildren,
     WorkflowInstanceCourseNodeInconsistent, WorkflowCourseCodeDoesNotExist, WorkflowCourseNodeCodeDoesNotExist,
-    WorkflowInstanceCourseCodeMultipleTimes, WorkflowInstanceCourseNodeCannotBeForeign
+    WorkflowInstanceCourseCodeMultipleTimes, WorkflowInstanceCourseNodeCannotBeForeign,
+    WorkflowCourseNodeTypeDoesNotExist, WorkflowCourseNodeTypeNotUnique
 )
 
 
@@ -133,6 +134,15 @@ class CourseManager(models.Manager):
         return self.get(workflow__code=wf_code, code=code)
 
 
+def _workflow_course_has_node_of_type(raiser, error):
+    if error.code == 'not-exists':
+        return WorkflowCourseNodeTypeDoesNotExist, (raiser, error)
+    elif error.code == 'not-unique':
+        return WorkflowCourseNodeTypeNotUnique, (raiser, error)
+    else:
+        return WorkflowInvalidState, (raiser, error)
+
+
 class Course(models.Model):
     """
     Workflow action course.
@@ -151,7 +161,26 @@ class Course(models.Model):
     def natural_key(self):
         return self.workflow.code, self.code
 
-    def clean(self):
+    @wraps_validation_error(_workflow_course_has_node_of_type)
+    def _verify_has_node_of_type(self, node_type, msg):
+        count = self.nodes.filter(type=node_type).count()
+        if count > 1:
+            raise ValidationError(msg, code='not-exists')
+        elif count == 0:
+            raise ValidationError(msg, code='not-unique')
+
+    def verify_has_cancel_node(self, keep=False):
+        return self._verify_has_node_of_type(Node.CANCEL, _('A workflow course is expected to have exactly one '
+                                                            'cancel node'), keep=keep)
+
+    def verify_has_joined_node(self, keep=False):
+        if self.callers.exclude(joiner__isnull=True).exists():
+            return
+        return self._verify_has_node_of_type(Node.CANCEL, _('A non-root workflow course is expected to have at least '
+                                                            'one joined node when having at least one calling split '
+                                                            'with a joiner callable'), keep=keep)
+
+    def clean(self, keep=True):
         """
         A course must validate by having:
         - Exactly one enter node.
@@ -165,18 +194,14 @@ class Course(models.Model):
         if self.pk:
             if self.nodes.filter(type=Node.ENTER).count() != 1:
                 raise ValidationError(_('A workflow course is expected to have exactly one enter node'))
-            if self.nodes.filter(type=Node.CANCEL).count() != 1:
-                raise ValidationError(_('A workflow course is expected to have exactly one cancel node'))
+            self.verify_has_cancel_node(keep=False)
             if not self.nodes.filter(type=Node.EXIT).exists():
                 raise ValidationError(_('A workflow course is expected to have at least one exit node'))
             if self.deph > 0:
                 if not self.callers.exists() or self.callers.exclude(course__depth__lt=self.depth, type=Node.SPLIT):
                     raise ValidationError(_('A non-root workflow course is expected to have at least one calling node. '
                                             'Each calling node must be a split node, and have a lower depth.'))
-                if self.callers.exclude(joiner__isnull=True).exists() and not \
-                        self.nodes.filter(type=Node.JOINED).exists():
-                    raise ValidationError(_('A non-root workflow course is expected to have at least one joined node '
-                                            'when having at least one calling split with a joiner callable'))
+                self.verify_has_joined_node(keep=keep)
             else:
                 if self.callers.exists():
                     raise ValidationError(_('A root node cannot have callers'))
