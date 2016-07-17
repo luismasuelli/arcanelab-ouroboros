@@ -1,4 +1,4 @@
-from django.core.exceptions import ValidationError, PermissionDenied
+from django.core.exceptions import ValidationError, PermissionDenied, ObjectDoesNotExist
 
 #####################################################################################
 #                                                                                   #
@@ -99,3 +99,33 @@ class WorkflowNoSuchElement(WorkflowExceptionMixin, LookupError):
 # Exception subclasses start here. Finally we will be using them directly. #
 #                                                                          #
 ############################################################################
+
+# Subclasses go here
+
+############################################################################
+#                                                                          #
+# Exception helpers go here. These exceptions are useful for verifiers.    #
+#                                                                          #
+############################################################################
+
+
+def ensure(callable, message, klass=WorkflowStandardInvalidState, params=None,
+           wrap_does_not_exist=True):
+    """
+    A standard verifier that triggers subclasses of WorkflowStandardInvalidState
+      exceptions.
+    :param callable: The condition to expect be true.
+    :param message: The exception's message if the condition is false.
+    :param klass: The exception's class if the condition is false.
+    :param params: The exception's params if the condition is false.
+    :param wrap_does_not_exist: If false, ObjectDoesNotExist exceptions are
+      reraised. By default they are suppressed.
+    :return:
+    """
+
+    try:
+        if not callable():
+            raise klass(message, params)
+    except ObjectDoesNotExist:
+        if not wrap_does_not_exist:
+            raise
