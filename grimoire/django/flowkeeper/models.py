@@ -220,6 +220,12 @@ class NodeSpec(models.Model):
                                     help_text=_('Course spec this node spec belongs to'))
     code = models.SlugField(max_length=20, null=False, blank=False, verbose_name=_('Code'),
                             help_text=_('Internal (unique) code'))
+    landing_handler = fields.CallableReferenceField(blank=True, null=True, verbose_name=_('Landing Handler'),
+                                                    help_text=_('A callable that will triggered when this node is '
+                                                                'reached. The expected signature is (document, user) '
+                                                                'since no interaction is expected to exist with the '
+                                                                'workflow instance, but the handlers should perform '
+                                                                'actions in the document'))
     # Exit nodes will have an exit value
     exit_value = models.PositiveSmallIntegerField(blank=True, null=True, verbose_name=_('Exit Value'),
                                                   help_text=_('Exit value. Expected only for exit nodes'))
@@ -239,7 +245,7 @@ class NodeSpec(models.Model):
                                           help_text=_('Permission code (as <application>.<permission>) to test against '
                                                       'when an action on this node is executed. The user who intends '
                                                       'to execute the action in this node must satisfy this permission '
-                                                      'against the associated document.'))
+                                                      'against the associated document'))
     branches = models.ManyToManyField(CourseSpec, blank=True, related_name='callers', verbose_name=_('Branches'),
                                       help_text=_('Courses this node branches to. Expected only for split nodes'))
 
@@ -281,7 +287,7 @@ class NodeSpec(models.Model):
         if (self.joiner is None) ^ (self.outbounds.count() == 1):
             raise exceptions.WorkflowCourseNodeInconsistentJoiner(self, _('Split nodes with one outbound must have no '
                                                                           'joiner, while split nodes with many '
-                                                                          'outbounds must have joiner.'))
+                                                                          'outbounds must have joiner'))
 
     def verify_node_has_no_branches(self):
         exceptions.ensure(lambda obj: not obj.branches.exists(), self, _('This node must have no branches'))
@@ -396,7 +402,7 @@ class TransitionSpec(models.Model):
     # These fields are only allowed for input
     permission = models.CharField(max_length=201, blank=True, null=True, verbose_name=_('Permission'),
                                   help_text=_('Permission code (as <application>.<permission>) to test against. It is '
-                                              'not required, but only allowed if coming from an input node.'))
+                                              'not required, but only allowed if coming from an input node'))
     # These fields are only allowed for multiplexer
     condition = fields.CallableReferenceField(blank=True, null=True, verbose_name=_('Condition'),
                                               help_text=_('A callable evaluating the condition. Expected only for '
