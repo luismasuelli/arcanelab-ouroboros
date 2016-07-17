@@ -91,27 +91,28 @@ class Workflow(object):
 
         @classmethod
         def is_waiting(cls, course_instance):
-            return cls._check_status(course_instance, models.Node.INPUT)
+            return cls._check_status(course_instance, models.NodeSpec.INPUT)
 
         @classmethod
         def is_cancelled(cls, course_instance):
-            return cls._check_status(course_instance, models.Node.CANCEL)
+            return cls._check_status(course_instance, models.NodeSpec.CANCEL)
 
         @classmethod
         def is_ended(cls, course_instance):
-            return cls._check_status(course_instance, models.Node.EXIT)
+            return cls._check_status(course_instance, models.NodeSpec.EXIT)
 
         @classmethod
         def is_splitting(cls, course_instance):
-            return cls._check_status(course_instance, models.Node.SPLIT)
+            return cls._check_status(course_instance, models.NodeSpec.SPLIT)
 
         @classmethod
         def is_joined(cls, course_instance):
-            return cls._check_status(course_instance, models.Node.JOINED)
+            return cls._check_status(course_instance, models.NodeSpec.JOINED)
 
         @classmethod
         def is_terminated(cls, course_instance):
-            return cls._check_status(course_instance, (models.Node.JOINED, models.Node.EXIT, models.Node.CANCEL))
+            return cls._check_status(course_instance, (models.NodeSpec.JOINED, models.NodeSpec.EXIT,
+                                                       models.NodeSpec.CANCEL))
 
         @classmethod
         def find_course(cls, course_instance, path):

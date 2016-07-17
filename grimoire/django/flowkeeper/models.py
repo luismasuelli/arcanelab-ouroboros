@@ -6,14 +6,11 @@ from django.utils.translation import ugettext_lazy as _
 from django.contrib.contenttypes.models import ContentType
 from grimoire.django.tracked.models import TrackedLive
 from django.utils.six import string_types
-from .fields import CallableReferenceField
+from . import exceptions, fields
 from .support import (
-    wraps_validation_error, WorkflowHasMultipleMainCourses, WorkflowInvalidState, WorkflowHasNoMainCourse,
-    WorkflowCannotInstantiate, WorkflowInstanceCourseInconsistent, WorkflowInstanceHasNoMainCourse,
-    WorkflowInstanceHasMultipleMainCourses, WorkflowInstanceCourseNodeDoesNotHaveChildren,
-    WorkflowInstanceCourseNodeInconsistent, WorkflowCourseCodeDoesNotExist, WorkflowCourseNodeCodeDoesNotExist,
-    WorkflowInstanceCourseCodeMultipleTimes, WorkflowInstanceCourseNodeCannotBeForeign,
-    WorkflowCourseNodeTypeDoesNotExist, WorkflowCourseNodeTypeNotUnique
+    wraps_validation_error, WorkflowInvalidState, WorkflowInstanceCourseInconsistent,
+    WorkflowInstanceCourseNodeInconsistent, WorkflowCourseNodeCodeDoesNotExist,
+    WorkflowInstanceCourseNodeCannotBeForeign,
 )
 
 
@@ -37,16 +34,7 @@ class WorkflowManager(models.Manager):
         return self.get(code=code)
 
 
-def _workflow_verify_main_course(raiser, error):
-    if error.code == 'not-exists':
-        return WorkflowHasNoMainCourse, (raiser, error)
-    elif error.code == 'not-unique':
-        return WorkflowHasMultipleMainCourses, (raiser, error)
-    else:
-        return WorkflowInvalidState, (raiser, error)
-
-
-class Workflow(models.Model):
+class WorkflowSpec(models.Model):
     """
     Workflow class. Defines itself, and the document type it can associate to.
     """
@@ -58,130 +46,127 @@ class Workflow(models.Model):
                             help_text=_('Internal (unique) code'))
     name = models.CharField(max_length=60, null=False, blank=False, verbose_name=_('Name'))
     description = models.CharField(max_length=100, null=False, blank=False, verbose_name=_('Description'))
-    permission = models.CharField(max_length=201, blank=True, null=True, verbose_name=_('Permission'),
-                                  help_text=_('Permission code (as <application>.<permission>) to test against. The '
-                                              'user who intends to create a workflow instance must satisfy this '
-                                              'permission.'))
+    create_permission = models.CharField(max_length=201, blank=True, null=True, verbose_name=_('Create Permission'),
+                                         help_text=_('Permission code (as <application>.<permission>) to test against '
+                                                     'when a workflow instance is created. The user who intends to '
+                                                     'create a workflow instance must satisfy this permission against '
+                                                     'the associated document.'))
+    cancel_permission = models.CharField(max_length=201, blank=True, null=True, verbose_name=_('Cancel Permission'),
+                                         help_text=_('Permission code (as <application>.<permission>) to test against '
+                                                     'when a course instance is cancelled. The user who intends to '
+                                                     'cancel a course instance in this workflow must satisfy this '
+                                                     'permission against the associated document.'))
     objects = WorkflowManager()
 
     def natural_key(self):
         return self.code
 
-    @wraps_validation_error(_workflow_verify_main_course)
     def verify_exactly_one_parent_course(self):
         """
         Verifies only one course for the workflow.
         :return:
         """
-        count = self.courses.filter(depth=0).count()
-        if count == 0:
-            raise ValidationError(_('No main course is defined for the workflow (expected one)'), code='not-exists')
-        if count > 1:
-            raise ValidationError(_('Multiple main courses are defined for the workflow (expected one)'),
-                                  code='not-unique')
 
-    def verify_can_create_workflow(self, user):
-        """
-        Verifies that the user can create a workflow instance.
-        :param user:
-        :return:
-        """
-        if self.permission and not user.has_perm(self.permission):
-            raise WorkflowCannotInstantiate(self)
+        try:
+            return self.course_specs.get(depth=0)
+        except CourseSpec.DoesNotExist:
+            raise exceptions.WorkflowSpecHasNoMainCourse(self, _('No main course is defined for the workflow '
+                                                                 '(expected one)'))
+        except CourseSpec.MultipleObjectsReturned:
+            raise exceptions.WorkflowSpecHasMultipleMainCourses(self, _('Multiple main courses are defined for the '
+                                                                        'workflow (expected one)'))
 
-    def clean(self, keep=True):
+    def clean(self):
         """
         A workflow must validate by having:
         - Exactly one parent Course.
         """
 
         if self.pk:
-            self.verify_exactly_one_parent_course(keep=keep)
-
-    @transaction.atomic
-    def instantiate(self, user, document):
-        """
-        Creates and saves a workflow instance, given a document and a user.
-
-        :param user: The user, which must have permission to instantiate the workflow, if required.
-        :param document: A document suitable for this workflow.
-        :return: The created instance.
-        """
-
-        self.save()  # Since this runs inside a transaction, we will call clean() later and will revert on exception.
-        self.clean(keep=False)
-        self.verify_can_create_workflow(user)
-        instance = WorkflowInstance(workflow=self, document=document)
-        instance.clean_fields()
-        instance.validate_unique()
-        instance.clean(keep=False)
-        instance.save()
-        main_course_instance = CourseInstance(workflow_instance=instance, course=self.courses.get(depth=0))
-        main_course_instance.clean_fields()
-        main_course_instance.validate_unique()
-        main_course_instance.clean(keep=False)
-        main_course_instance.save()
-        return instance
+            self.verify_exactly_one_parent_course()
 
     class Meta:
-        verbose_name = _('Workflow')
-        verbose_name_plural = _('Workflows')
+        verbose_name = _('Workflow Spec')
+        verbose_name_plural = _('Workflow Specs')
 
 
 class CourseManager(models.Manager):
 
     def get_by_natural_key(self, wf_code, code):
-        return self.get(workflow__code=wf_code, code=code)
+        return self.get(workflow_spec__code=wf_code, code=code)
 
 
-def _workflow_course_has_node_of_type(raiser, error):
-    if error.code == 'not-exists':
-        return WorkflowCourseNodeTypeDoesNotExist, (raiser, error)
-    elif error.code == 'not-unique':
-        return WorkflowCourseNodeTypeNotUnique, (raiser, error)
-    else:
-        return WorkflowInvalidState, (raiser, error)
-
-
-class Course(models.Model):
+class CourseSpec(models.Model):
     """
     Workflow action course.
     """
 
-    workflow = models.ForeignKey(Workflow, null=False, blank=False, on_delete=models.CASCADE, related_name='courses',
-                                 verbose_name=_('Workflow'), help_text=_('Workflow this course belongs to'))
+    workflow_spec = models.ForeignKey(WorkflowSpec, null=False, blank=False, on_delete=models.CASCADE,
+                                      related_name='course_specs', verbose_name=_('Workflow Spec'),
+                                      help_text=_('Workflow spec this course spec belongs to'))
     code = models.SlugField(max_length=20, null=False, blank=True, verbose_name=_('Code'),
                             help_text=_('Internal (unique) code'))
     depth = models.PositiveSmallIntegerField(verbose_name=_('Depth'), null=False, blank=False,
                                              help_text=_('Tells the depth of this course. The main course must be '
                                                          'of depth 0, while successive descendants should increment '
                                                          'the level by 1'))
+    cancel_permission = models.CharField(max_length=201, blank=True, null=True, verbose_name=_('Cancel Permission'),
+                                         help_text=_('Permission code (as <application>.<permission>) to test against '
+                                                     'when this course instance is cancelled. The user who intends to '
+                                                     'cancel this course instance must satisfy this permission against '
+                                                     'the associated document.'))
     objects = CourseManager()
 
     def natural_key(self):
         return self.workflow.code, self.code
 
-    @wraps_validation_error(_workflow_course_has_node_of_type)
     def _verify_has_node_of_type(self, node_type, msg):
         try:
-            return self.nodes.get(type=node_type)
-        except Node.DoesNotExist:
-            raise ValidationError(msg, code='not-exists')
-        except Node.MultipleObjectsReturned:
-            raise ValidationError(msg, code='not-unique')
+            return self.node_specs.get(type=node_type)
+        except NodeSpec.DoesNotExist:
+            raise exceptions.WorkflowCourseSpecHasNoRequiredNode(self, msg)
+        except NodeSpec.MultipleObjectsReturned:
+            raise exceptions.WorkflowCourseSpecMultipleRequiredNodes(self, msg)
 
-    def verify_has_cancel_node(self, keep=False):
-        return self._verify_has_node_of_type(Node.CANCEL, _('A workflow course is expected to have exactly one '
-                                                            'cancel node'), keep=keep)
+    def verify_has_cancel_node(self):
+        return self._verify_has_node_of_type(NodeSpec.CANCEL, _('A workflow course is expected to have exactly one '
+                                                                'cancel node'))
 
-    def verify_has_joined_node(self, keep=False):
+    def verify_has_joined_node(self):
         if self.callers.exclude(joiner__isnull=True).exists():
             return
-        return self._verify_has_node_of_type(Node.CANCEL, _('A non-root workflow course is expected to have at least '
-                                                            'one joined node when having at least one calling split '
-                                                            'with a joiner callable'), keep=keep)
+        return self._verify_has_node_of_type(NodeSpec.CANCEL, _('A non-root workflow course is expected to have at '
+                                                                'least one joined node when having at least one '
+                                                                'calling split with a joiner callable'))
 
-    def clean(self, keep=True):
+    def verify_has_enter_node(self):
+        return self._verify_has_node_of_type(NodeSpec.ENTER, _('A workflow course is expected to have exactly one '
+                                                               'enter node'))
+
+    def verify_has_exit_nodes(self):
+        try:
+            return self.node_specs.get(type=NodeSpec.EXIT)
+        except NodeSpec.DoesNotExist:
+            raise exceptions.WorkflowCourseSpecHasNoRequiredNode(self, _('A workflow course is expected to have at '
+                                                                         'least one exit node'))
+        except NodeSpec.MultipleObjectsReturned:
+            # We forgive this case, since it shows many exit nodes exist.
+            pass
+
+    def verify_hierarchy(self):
+        if self.deph > 0:
+            if not self.callers.exists() or self.callers.exclude(course_spec__depth__lt=self.depth,
+                                                                 type=NodeSpec.SPLIT).exists():
+                raise exceptions.WorkflowCourseSpecHasNoCallersAndIsNotRoot(
+                    self, _('A non-root workflow course is expected to have at least one calling node. Each '
+                            'calling node must be a split node, and have a lower depth.')
+                )
+            self.verify_has_joined_node()
+        else:
+            if self.callers.exists():
+                raise exceptions.WorkflowCourseSpecHasCallersAndIsRoot(self, _('A root node cannot have callers'))
+
+    def clean(self):
         """
         A course must validate by having:
         - Exactly one enter node.
@@ -193,27 +178,18 @@ class Course(models.Model):
             raise ValidationError(_('A course should have an empty code if, and only if, its depth is zero'))
 
         if self.pk:
-            if self.nodes.filter(type=Node.ENTER).count() != 1:
-                raise ValidationError(_('A workflow course is expected to have exactly one enter node'))
-            self.verify_has_cancel_node(keep=False)
-            if not self.nodes.filter(type=Node.EXIT).exists():
-                raise ValidationError(_('A workflow course is expected to have at least one exit node'))
-            if self.deph > 0:
-                if not self.callers.exists() or self.callers.exclude(course__depth__lt=self.depth, type=Node.SPLIT):
-                    raise ValidationError(_('A non-root workflow course is expected to have at least one calling node. '
-                                            'Each calling node must be a split node, and have a lower depth.'))
-                self.verify_has_joined_node(keep=keep)
-            else:
-                if self.callers.exists():
-                    raise ValidationError(_('A root node cannot have callers'))
+            self.verify_has_enter_node()
+            self.verify_has_cancel_node()
+            self.verify_has_exit_nodes()
+            self.verify_hierarchy()
 
     class Meta:
-        verbose_name = _('Course')
-        verbose_name_plural = _('Courses')
-        unique_together = (('workflow', 'code'),)
+        verbose_name = _('Course Spec')
+        verbose_name_plural = _('Course Specs')
+        unique_together = (('workflow_spec', 'code'),)
 
 
-class Node(models.Model):
+class NodeSpec(models.Model):
     """
     Workflow action course node.
     """
@@ -239,26 +215,131 @@ class Node(models.Model):
     )
 
     type = models.CharField(max_length=15, null=False, blank=False, verbose_name=_('Type'), help_text=_('Node type'))
-    course = models.ForeignKey(Course, null=False, blank=False, on_delete=models.CASCADE, related_name='nodes',
-                               verbose_name=_('Course'), help_text=_('Course this node belongs to'))
+    course_spec = models.ForeignKey(CourseSpec, null=False, blank=False, on_delete=models.CASCADE,
+                                    related_name='node_specs', verbose_name=_('Course Spec'),
+                                    help_text=_('Course spec this node spec belongs to'))
     code = models.SlugField(max_length=20, null=False, blank=False, verbose_name=_('Code'),
                             help_text=_('Internal (unique) code'))
     # Exit nodes will have an exit value
     exit_value = models.PositiveSmallIntegerField(blank=True, null=True, verbose_name=_('Exit Value'),
                                                   help_text=_('Exit value. Expected only for exit nodes'))
     # Only for split nodes
-    joiner = CallableReferenceField(blank=True, null=True, verbose_name=_('Joiner'),
-                                    help_text=_('A callable that will be triggered every time a joined branch '
-                                                'reaches an end. The joined branch will trigger this callable '
-                                                'also providing the exit value (which is a positive integer, or '
-                                                '-1 if the branch was closed due to a cancelation node). This '
-                                                'callable must return a valid transition name (existing outbound '
-                                                'in this node) to leave the split and take an action, or None to '
-                                                'remain in the split and wait for other branches (an exception '
-                                                'will be raised if None is returned but no branch is still to '
-                                                'finish)'))
-    branches = models.ManyToManyField(Course, blank=True, related_name='callers', verbose_name=_('Branches'),
+    joiner = fields.CallableReferenceField(blank=True, null=True, verbose_name=_('Joiner'),
+                                           help_text=_('A callable that will be triggered every time a split\'s branch '
+                                                       'reaches an end. The split\'s branch will trigger this callable '
+                                                       'also providing the exit value (which is a positive integer, or '
+                                                       '-1 if the branch was closed due to a cancellation node). This '
+                                                       'callable must return a valid transition name (existing '
+                                                       'outbound in this node) to leave the split and take an action, '
+                                                       'or None to remain in the split and wait for other branches (an '
+                                                       'exception will be raised if None is returned but no branch is '
+                                                       'still to finish)'))
+    # Only for input nodes
+    execute_permission = models.CharField(max_length=201, blank=True, null=True, verbose_name=_('Cancel Permission'),
+                                          help_text=_('Permission code (as <application>.<permission>) to test against '
+                                                      'when an action on this node is executed. The user who intends '
+                                                      'to execute the action in this node must satisfy this permission '
+                                                      'against the associated document.'))
+    branches = models.ManyToManyField(CourseSpec, blank=True, related_name='callers', verbose_name=_('Branches'),
                                       help_text=_('Courses this node branches to. Expected only for split nodes'))
+
+    def verify_node_has_no_inbounds(self):
+        exceptions.ensure(lambda obj: not obj.inbounds.exists(), self, _('This node must not have inbounds'),
+                          exceptions.WorkflowCourseNodeHasInbounds)
+
+    def verify_node_has_no_outbounds(self):
+        exceptions.ensure(lambda obj: not obj.outbounds.exists(), self, _('This node must not have outbounds'),
+                          exceptions.WorkflowCourseNodeHasOutbounds)
+
+    def verify_node_has_inbounds(self):
+        exceptions.ensure(lambda obj: obj.inbounds.exists(), self, _('This node must have inbounds'),
+                          exceptions.WorkflowCourseNodeHasNoInbound)
+
+    def verify_node_has_outbounds(self):
+        exceptions.ensure(lambda obj: obj.outbounds.exists(), self, _('This node must have outbounds'),
+                          exceptions.WorkflowCourseNodeHasNoOutbound)
+
+    def verify_node_has_one_outbound(self):
+        try:
+            return self.outbounds.get()
+        except TransitionSpec.DoesNotExist:
+            raise exceptions.WorkflowCourseNodeHasNoOutbound(self, _('This node must have exactly one outbound'))
+        except TransitionSpec.MultipleObjectsReturned:
+            raise exceptions.WorkflowCourseNodeHasMultipleOutbounds(self, _('This node must have exactly one outbound'))
+
+    def verify_node_has_many_branches(self):
+        exceptions.ensure(lambda obj: obj.branches.count() > 1, self, _('This node must have at least two branches'))
+        try:
+            if self.branches.exclude(depth=self.course_spec.depth+1).exists():
+                raise exceptions.WorkflowCourseNodeInconsistentBranches(self, _('Split nodes must branch to courses '
+                                                                                'with depth=(depth)+1'))
+            if self.branches.exclude(workflow_spec=self.course_spec.workflow).exists():
+                raise exceptions.WorkflowCourseNodeInconsistentBranches(self, _('Split nodes must branch to courses in '
+                                                                                'the same workflow'))
+        except CourseSpec.DoesNotExist:
+            pass
+        if (self.joiner is None) ^ (self.outbounds.count() == 1):
+            raise exceptions.WorkflowCourseNodeInconsistentJoiner(self, _('Split nodes with one outbound must have no '
+                                                                          'joiner, while split nodes with many '
+                                                                          'outbounds must have joiner.'))
+
+    def verify_node_has_no_branches(self):
+        exceptions.ensure(lambda obj: not obj.branches.exists(), self, _('This node must have no branches'))
+
+    def verify_enter_node(self):
+        self.verify_node_has_no_inbounds()
+        self.verify_node_has_one_outbound()
+        self.verify_node_has_no_branches()
+        exceptions.ensure_field('exit_value', self, True, True)
+        exceptions.ensure_field('joiner', self, True, True)
+        exceptions.ensure_field('execute_permission', self, True, True)
+
+    def verify_exit_node(self):
+        self.verify_node_has_no_outbounds()
+        self.verify_node_has_inbounds()
+        self.verify_node_has_no_branches()
+        exceptions.ensure_field('exit_value', self)
+        exceptions.ensure_field('joiner', self, True, True)
+        exceptions.ensure_field('execute_permission', self, True, True)
+
+    def verify_isolated_node(self):
+        self.verify_node_has_no_inbounds()
+        self.verify_node_has_no_outbounds()
+        self.verify_node_has_no_branches()
+        exceptions.ensure_field('exit_value', self, True, True)
+        exceptions.ensure_field('joiner', self, True, True)
+        exceptions.ensure_field('execute_permission', self, True, True)
+
+    def verify_split_node(self):
+        self.verify_node_has_inbounds()
+        self.verify_node_has_outbounds()
+        self.verify_node_has_many_branches()
+        exceptions.ensure_field('exit_value', self, True, True)
+        exceptions.ensure_field('execute_permission', self, True, True)
+
+    def verify_step_node(self):
+        self.verify_node_has_inbounds()
+        self.verify_node_has_one_outbound()
+        self.verify_node_has_no_branches()
+        exceptions.ensure_field('exit_value', self, True, True)
+        exceptions.ensure_field('joiner', self, True, True)
+        exceptions.ensure_field('execute_permission', self, True, True)
+
+    def verify_multiplexed_node(self):
+        self.verify_node_has_inbounds()
+        self.verify_node_has_outbounds()
+        self.verify_node_has_no_branches()
+        exceptions.ensure_field('exit_value', self, True, True)
+        exceptions.ensure_field('joiner', self, True, True)
+        exceptions.ensure_field('execute_permission', self, True, True)
+
+    def verify_input_node(self):
+        self.verify_node_has_inbounds()
+        self.verify_node_has_outbounds()
+        self.verify_node_has_no_branches()
+        exceptions.ensure_field('exit_value', self, False, False)
+        exceptions.ensure_field('joiner', self, True, True)
+        exceptions.ensure_field('execute_permission', self)
 
     def clean(self):
         """
@@ -268,45 +349,19 @@ class Node(models.Model):
 
         if self.pk:
             if self.type == self.ENTER:
-                if self.inbounds.exists():
-                    raise ValidationError(_('Enter nodes must not have inbound transitions'))
-                if self.outbounds.count() != 1:
-                    raise ValidationError(_('Enter nodes must have exactly one outbound transition'))
+                self.verify_enter_node()
             if self.type in (self.CANCEL, self.JOINED):
-                if self.inbounds.exists() or self.outbounds.exists():
-                    raise ValidationError(_('Cancel and joined nodes must not have any transition'))
+                self.verify_isolated_node()
             if self.type == self.EXIT:
-                if self.outbounds.exists():
-                    raise ValidationError(_('Exit nodes must not have outbound transitions'))
-            else:
-                if self.exit_value is not None:
-                    raise ValidationError({'exit_value': [_('This field must be null.')]})
-            if self.type in (self.INPUT, self.MULTIPLEXER, self.SPLIT):
-                if self.inbounds.exists() or self.outbounds.exists():
-                    raise ValidationError(_('Input nodes must have at least one inbound and one outbound transitions'))
+                self.verify_exit_node()
             if self.type == self.STEP:
-                if self.outbounds.count() != 1:
-                    raise ValidationError(_('Step nodes must have exactly one outbound transition'))
-                if not self.inbounds.exists():
-                    raise ValidationError(_('Step nodes must have at least one inbound transition'))
+                self.verify_step_node()
+            if self.type == self.MULTIPLEXER:
+                self.verify_multiplexed_node()
+            if self.type == self.INPUT:
+                self.verify_input_node()
             if self.type == self.SPLIT:
-                if self.branches.count() < 2:
-                    raise ValidationError(_('Split nodes must have at least two branches'))
-                try:
-                    if self.branches.exclude(depth=self.course.depth+1).exists():
-                        raise ValidationError(_('Split nodes must branch to courses with depth=(depth)+1'))
-                    if self.branches.exclude(workflow=self.course.workflow).exists():
-                        raise ValidationError(_('Split nodes must branch to courses in the same workflow'))
-                except Course.DoesNotExist:
-                    pass
-                if (self.joiner is None) ^ (self.outbounds.count() == 1):
-                    raise ValidationError(_('Split nodes with one outbound must have no joiner, while split nodes with '
-                                            'many outbounds must have joiner.'))
-            else:
-                if self.branches.exists():
-                    raise ValidationError(_('Only split nodes can have branches'))
-                if self.joiner:
-                    raise ValidationError({'joiner': [_('This field must be null.')]})
+                self.verify_split_node()
 
     class Meta:
         verbose_name = _('Node')
@@ -315,25 +370,25 @@ class Node(models.Model):
 
 
 def valid_origin_types(obj):
-    if obj and obj.type not in (Node.EXIT, Node.CANCEL):
-        raise ValidationError(_('Origin node cannot be of type "exit" or "cancel"'))
+    if obj and obj.type not in (NodeSpec.EXIT, NodeSpec.CANCEL, NodeSpec.JOINED):
+        raise ValidationError(_('Origin node cannot be of type "exit", "joined" or "cancel"'))
 
 
 def valid_destination_types(obj):
-    if obj and obj.type not in (Node.ENTER, Node.CANCEL):
-        raise ValidationError(_('Origin node cannot be of type "enter" or "cancel"'))
+    if obj and obj.type not in (NodeSpec.ENTER, NodeSpec.CANCEL, NodeSpec.JOINED):
+        raise ValidationError(_('Origin node cannot be of type "enter", "joined" or "cancel"'))
 
 
-class Transition(models.Model):
+class TransitionSpec(models.Model):
     """
     Workflow transition.
     """
 
-    origin = models.ForeignKey(Node, null=False, blank=False, on_delete=models.CASCADE, related_name='outbounds',
+    origin = models.ForeignKey(NodeSpec, null=False, blank=False, on_delete=models.CASCADE, related_name='outbounds',
                                validators=[valid_origin_types], verbose_name=_('Origin'), help_text=_('Origin node'))
-    destination = models.ForeignKey(Node, null=False, blank=False, on_delete=models.CASCADE, related_name='inbounds',
-                                    validators=[valid_destination_types], verbose_name=_('Destination'),
-                                    help_text=_('Destination node'))
+    destination = models.ForeignKey(NodeSpec, null=False, blank=False, on_delete=models.CASCADE,
+                                    related_name='inbounds', validators=[valid_destination_types],
+                                    verbose_name=_('Destination'), help_text=_('Destination node'))
     # These fields are only allowed for split and input
     action_name = models.SlugField(max_length=30, blank=True, null=True, verbose_name=_('Action Name'),
                                    help_text=_('Action name for this transition. Unique with respect to the origin '
@@ -343,12 +398,62 @@ class Transition(models.Model):
                                   help_text=_('Permission code (as <application>.<permission>) to test against. It is '
                                               'not required, but only allowed if coming from an input node.'))
     # These fields are only allowed for multiplexer
-    condition = CallableReferenceField(blank=True, null=True, verbose_name=_('Condition'),
-                                       help_text=_('A callable evaluating the condition. Expected only for '
-                                                   'multiplexer nodes'))
+    condition = fields.CallableReferenceField(blank=True, null=True, verbose_name=_('Condition'),
+                                              help_text=_('A callable evaluating the condition. Expected only for '
+                                                          'multiplexer nodes'))
     priority = models.PositiveSmallIntegerField(blank=True, null=True, verbose_name=_('Priority'),
                                                 help_text=_('A priority value used to order evaluation of condition. '
                                                             'Expected only for multiplexer nodes'))
+
+    def verify_consistency(self):
+        exceptions.ensure(lambda obj: obj.origin.course_spec == obj.destination.course_spec, self,
+                          _('Connected nodes for a transition must belong to the same course'),
+                          exceptions.WorkflowCourseTransitionInconsistent)
+
+    def verify_unique_priority(self):
+        if self.origin.outbounds.exclude(pk=self.pk).filter(priority=self.priority).exists():
+            raise exceptions.WorkflowCourseTransitionPriorityNotUnique(
+                self, {'priority': [_('This field must be unique among transitions in multiplexer nodes.')]}
+            )
+
+    def verify_unique_action_name(self):
+        if self.origin.outbounds.exclude(pk=self.pk).filter(action_name=self.action_name).exists():
+            raise exceptions.WorkflowCourseTransitionActionNameNotUnique(
+                self, {'action_name': [_('This field must be unique among transitions in multiplexer nodes.')]}
+            )
+
+    def verify_enter_origin(self):
+        exceptions.ensure_field('condition', self, True, True)
+        exceptions.ensure_field('priority', self, True, True)
+        exceptions.ensure_field('action_name', self, True, True)
+        # permission is allowed here, but not required
+
+    def verify_split_origin(self):
+        exceptions.ensure_field('condition', self, True, True)
+        exceptions.ensure_field('priority', self, True, True)
+        exceptions.ensure_field('action_name', self)
+        exceptions.ensure_field('permission', self, True, True)
+        self.verify_unique_action_name()
+
+    def verify_step_origin(self):
+        exceptions.ensure_field('condition', self, True, True)
+        exceptions.ensure_field('priority', self, True, True)
+        exceptions.ensure_field('action_name', self, True, True)
+        exceptions.ensure_field('permission', self, True, True)
+
+    def verify_multiplexed_origin(self):
+        exceptions.ensure_field('condition', self)
+        exceptions.ensure_field('priority', self)
+        exceptions.ensure_field('action_name', self, True, True)
+        exceptions.ensure_field('permission', self, True, True)
+        self.verify_unique_priority()
+
+    def verify_input_origin(self):
+        exceptions.ensure_field('condition', self, True, True)
+        exceptions.ensure_field('priority', self, True, True)
+        exceptions.ensure_field('action_name', self)
+        # permission is allowed here, but not required
+        self.verify_unique_action_name()
 
     def clean(self):
         """
@@ -357,79 +462,31 @@ class Transition(models.Model):
         - condition and priority must be present for multiplexer origin, but absent for any other origin.
         - action_name must be present for input and split origins, but absent for any other origin.
         - action_name must be unique for given origin for input and split origins.
+        - permission can be present only for input and split origins.
         - priority must be unique for given origin for multiplexer nodes.
         """
 
-        try:
-            origin = self.origin.course
-            destination = self.destination
-        except Node.DoesNotExist:
-            return
-
-        if origin.course != destination.course:
-            raise ValidationError(_('Connected nodes for a transition must belong to the same course'))
-
-        if origin.type == Node.MULTIPLEXER:
-            # not null
-            if self.condition is None:
-                raise ValidationError({'condition': [_('This field cannot be null.')]})
-            # not blank
-            elif not self.condition:
-                raise ValidationError({'condition': [_('This field cannot be blank.')]})
-            # not null
-            elif self.priority is None:
-                raise ValidationError({'priority': [_('This field cannot be null.')]})
-            # not blank
-            elif not self.priority:
-                raise ValidationError({'priority': [_('This field cannot be blank.')]})
-            # unique
-            elif self.origin.outbounds.exclude(pk=self.pk).filter(priority=self.priority).exists():
-                raise ValidationError({'action_name': [_('This field must be unique among transitions in '
-                                                         'multiplexer nodes.')]})
-        else:
-            # null
-            if self.condition is not None:
-                raise ValidationError({'condition': [_('This field must be null.')]})
-            # null
-            elif self.priority is not None:
-                raise ValidationError({'priority': [_('This field must be null.')]})
-        if origin.type in (Node.SPLIT, Node.INPUT):
-            # not null
-            if self.action_name is None:
-                raise ValidationError({'action_name': [_('This field cannot be null.')]})
-            # not blank
-            elif self.action_name:
-                raise ValidationError({'action_name': [_('This field cannot be blank.')]})
-            # unique
-            elif origin.outbounds.exclude(pk=self.pk).filter(action_name=self.action_name).exists():
-                raise ValidationError({'action_name': [_('This field must be unique among transitions in '
-                                                         'split and input nodes.')]})
-        else:
-            # null
-            if self.action_name is not None:
-                raise ValidationError({'action_name': [_('This field must be null.')]})
-        if origin.type not in (Node.INPUT, Node.ENTER):
-            # Null or blank.
-            if self.permission is not None:
-                raise ValidationError({'permission': [_('This field must be null.')]})
+        self.verify_consistency()
+        if self.pk:
+            if self.origin.type == NodeSpec.ENTER:
+                self.verify_enter_origin()
+            if self.origin.type == NodeSpec.STEP:
+                self.verify_step_origin()
+            if self.origin.type == NodeSpec.MULTIPLEXER:
+                self.verify_multiplexed_origin()
+            if self.origin.type == NodeSpec.INPUT:
+                self.verify_input_origin()
+            if self.origin.type == NodeSpec.SPLIT:
+                self.verify_split_origin()
 
     class Meta:
-        verbose_name = _('Transition')
-        verbose_name_plural = _('Transitions')
+        verbose_name = _('Transition Spec')
+        verbose_name_plural = _('Transition Specs')
 
 
 ####################################################
 # Workflow instances from here
 ####################################################
-
-
-def _workflow_instance_verify_main_course(raiser, error):
-    if error.code == 'not-exists':
-        return WorkflowInstanceHasNoMainCourse, (raiser, error)
-    elif error.code == 'not-unique':
-        return WorkflowInstanceHasMultipleMainCourses, (raiser, error)
-    else:
-        return WorkflowInvalidState, (raiser, error)
 
 
 class WorkflowInstance(TrackedLive):
@@ -489,7 +546,7 @@ class CourseInstance(TrackedLive):
     workflow_instance = models.ForeignKey(WorkflowInstance, related_name='courses', null=False, blank=False,
                                           on_delete=models.CASCADE)
     parent = models.ForeignKey('NodeInstance', related_name='branches', null=True, blank=True, on_delete=models.CASCADE)
-    course = models.ForeignKey(Course, null=False, blank=False, on_delete=models.CASCADE)
+    course = models.ForeignKey(CourseSpec, null=False, blank=False, on_delete=models.CASCADE)
     term_level = models.PositiveIntegerField(null=True, blank=True)
 
     def _cancel(self, level=0):
@@ -529,7 +586,7 @@ class CourseInstance(TrackedLive):
         if isinstance(node, string_types):
             try:
                 node = self.course.nodes.get(code=node)
-            except Node.DoesNotExist:
+            except NodeSpec.DoesNotExist:
                 raise WorkflowCourseNodeCodeDoesNotExist(self, node)
         else:
             if node.course != self.course:
@@ -537,97 +594,26 @@ class CourseInstance(TrackedLive):
         self.node.delete()
         return NodeInstance.objects.create(course_instance=self, node=node)
 
-    def _get_course_by_path(self, path):
-        if path == '':
-            return self
-        elif not self.splitting:
-            raise WorkflowInstanceCourseNodeDoesNotHaveChildren(self)
-        else:
-            self.node.verify_consistent_course()
-            parts = path.split('.', 1)
-            if len(parts) == 1:
-                head, tail = parts[0], ''
-            else:
-                head, tail = parts
-            try:
-                return self.node.branches.get(course__code=head)._get_course_by_path(tail)
-            except NodeInstance.DoesNotExist:
-                raise WorkflowCourseCodeDoesNotExist(self, head)
-            except NodeInstance.MultipleObjectsReturned:
-                raise WorkflowInstanceCourseCodeMultipleTimes(self, head)
-
-    @property
-    def pending(self):
-        try:
-            node = self.node
-            return False
-        except NodeInstance.DoesNotExist:
-            return True
-
-    @property
-    def waiting(self):
-        try:
-            return self.node.type == Node.INPUT
-        except NodeInstance.DoesNotExist:
-            return False
-
-    @property
-    def cancelled(self):
-        try:
-            return self.node.type == Node.CANCEL
-        except NodeInstance.DoesNotExist:
-            return False
-
-    @property
-    def ended(self):
-        try:
-            return self.node.type == Node.EXIT
-        except NodeInstance.DoesNotExist:
-            return False
-
-    @property
-    def splitting(self):
-        try:
-            return self.node.type == Node.SPLIT
-        except NodeInstance.DoesNotExist:
-            return False
-
-    @property
-    def joined(self):
-        try:
-            return self.node.type == Node.JOINED
-        except NodeInstance.DoesNotExist:
-            return False
-
-    @property
-    def terminated(self):
-        try:
-            return self.node.type in (Node.JOINED, Node.EXIT, Node.CANCEL)
-        except NodeInstance.DoesNotExist:
-            return False
-
-    @property
-    def drifting(self):
-        """
-        These nodes are invalid states! A workflow course instance is not expected
-          to step on these nodes!.
-        """
-        try:
-            return self.node.type in (Node.ENTER, Node.MULTIPLEXER, Node.STEP)
-        except NodeInstance.DoesNotExist:
-            return False
-
     @wraps_validation_error(lambda raiser, error: WorkflowInstanceCourseInconsistent(raiser))
     def verify_consistent_course(self):
         try:
             if self.course.workflow != self.workflow_instance.workflow:
                 raise ValidationError(_('Referenced course and instance do not refer the same workflow'))
+        except ObjectDoesNotExist:
+            pass
+
+        try:
             if self.parent and self.parent.course_instance not in self.course.callers.all():
                 raise ValidationError(_('Referenced course and parent node instance\'s course are not the same'))
         except ObjectDoesNotExist:
             pass
 
-    def clean(self, keep=False):
+        try:
+            self.node.verify_consistent_course()
+        except ObjectDoesNotExist:
+            pass
+
+    def clean(self):
         """
         Cleans consistency
         """
@@ -642,8 +628,8 @@ class NodeInstance(TrackedLive):
       same course. The related branches must also be consistent.
     """
 
-    course_instance = models.OneToOneField(CourseInstance, related_name='node', null=False, blank=False)
-    node = models.ForeignKey(Node, related_name='+', null=False, blank=False)
+    course_instance = models.OneToOneField(CourseInstance, related_name='node_instance', null=False, blank=False)
+    node = models.ForeignKey(NodeSpec, related_name='+', null=False, blank=False)
 
     @wraps_validation_error(lambda raiser, error: WorkflowInstanceCourseNodeInconsistent(raiser))
     def verify_consistent_course(self):
