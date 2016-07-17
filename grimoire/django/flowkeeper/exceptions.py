@@ -1,4 +1,6 @@
+from __future__ import unicode_literals
 from django.core.exceptions import ValidationError, PermissionDenied, ObjectDoesNotExist
+from django.utils.translation import ugettext_lazy as _
 
 #####################################################################################
 #                                                                                   #
@@ -161,6 +163,22 @@ class WorkflowCourseAdvanceDeniedByWrongNodeType(WorkflowCourseAdvanceDenied):
 # WorkflowInvalidState subclasses
 
 
+class WorkflowModelFieldMustBeNull(WorkflowStandardInvalidState):
+    CODE = 'non-null'
+
+
+class WorkflowModelFieldMustNotBeNull(WorkflowStandardInvalidState):
+    CODE = 'null'
+
+
+class WorkflowModelFieldMustBeBlank(WorkflowStandardInvalidState):
+    CODE = 'non-blank'
+
+
+class WorkflowModelFieldMustNotBeBlank(WorkflowStandardInvalidState):
+    CODE = 'blank'
+
+
 class WorkflowSpecHasNoMainCourse(WorkflowStandardInvalidState):
     CODE = 'workflow-spec::no-main-course'
 
@@ -185,6 +203,26 @@ class WorkflowCourseSpecHasCallersAndIsRoot(WorkflowStandardInvalidState):
     CODE = 'course-spec:callers-and-root'
 
 
+class WorkflowCourseNodeHasInbounds(WorkflowStandardInvalidState):
+    CODE = 'node-spec:node-has-inbounds'
+
+
+class WorkflowCourseNodeHasOutbounds(WorkflowStandardInvalidState):
+    CODE = 'node-spec:node-has-outbounds'
+
+
+class WorkflowCourseNodeHasNoInbound(WorkflowStandardInvalidState):
+    CODE = 'node-spec:node-has-no-inbound'
+
+
+class WorkflowCourseNodeHasNoOutbound(WorkflowStandardInvalidState):
+    CODE = 'node-spec:node-has-no-outbound'
+
+
+class WorkflowCourseNodeHasMultipleOutbounds(WorkflowStandardInvalidState):
+    CODE = 'node-spec:node-has-multiple-outbounds'
+
+
 ############################################################################
 #                                                                          #
 # Exception helpers go here. These exceptions are useful for verifiers.    #
@@ -192,12 +230,13 @@ class WorkflowCourseSpecHasCallersAndIsRoot(WorkflowStandardInvalidState):
 ############################################################################
 
 
-def ensure(callable, message, klass=WorkflowStandardInvalidState, params=None,
+def ensure(callable, obj, message, klass=WorkflowStandardInvalidState, params=None,
            wrap_does_not_exist=True):
     """
     A standard verifier that triggers subclasses of WorkflowStandardInvalidState
       exceptions.
     :param callable: The condition to expect be true.
+    :param obj: Object to raise the exception from and evaluate the callable.
     :param message: The exception's message if the condition is false.
     :param klass: The exception's class if the condition is false.
     :param params: The exception's params if the condition is false.
@@ -207,8 +246,29 @@ def ensure(callable, message, klass=WorkflowStandardInvalidState, params=None,
     """
 
     try:
-        if not callable():
-            raise klass(message, params)
+        if not callable(obj):
+            raise klass(obj, message, params)
     except ObjectDoesNotExist:
         if not wrap_does_not_exist:
             raise
+
+
+def ensure_field(field, obj, null=False, blank=False):
+    """
+    Ensures some field is present or not according to specified rulings.
+    :param field: Field to query.
+    :param obj: Model object to query the field.
+    :param null: If the field is expected to be null.
+    :param blank: If the field is expected to be blank (ignored if null=True).
+    :return:
+    """
+
+    value = getattr(obj, field)
+    if null and value is not None:
+        raise WorkflowModelFieldMustBeNull(obj, {field: [_('This field must be null.')]})
+    elif not null and value is None:
+        raise WorkflowModelFieldMustNotBeNull(obj, {field: [_('This field cannot be null.')]})
+    if blank and value:
+        raise WorkflowModelFieldMustBeBlank(obj, {field: [_('This field must be blank.')]})
+    elif not blank and not value:
+        raise WorkflowModelFieldMustNotBeBlank(obj, {field: [_('This field cannot be blank.')]})
