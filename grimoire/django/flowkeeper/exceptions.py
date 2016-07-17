@@ -100,6 +100,10 @@ class WorkflowNoSuchElement(WorkflowExceptionMixin, LookupError):
 #                                                                          #
 ############################################################################
 
+
+# WorkflowActionDenied subclasses
+
+
 class WorkflowCreateDenied(WorkflowActionDenied):
     """
     This exception will be triggered when a user attempts to create a
@@ -152,6 +156,33 @@ class WorkflowCourseAdvanceDeniedByTransition(WorkflowCourseAdvanceDenied):
 
 class WorkflowCourseAdvanceDeniedByWrongNodeType(WorkflowCourseAdvanceDenied):
     pass
+
+
+# WorkflowInvalidState subclasses
+
+
+class WorkflowSpecHasNoMainCourse(WorkflowStandardInvalidState):
+    CODE = 'workflow-spec::no-main-course'
+
+
+class WorkflowSpecHasMultipleMainCourses(WorkflowStandardInvalidState):
+    CODE = 'workflow-spec:multiple-main-courses'
+
+
+class WorkflowCourseSpecHasNoRequiredNode(WorkflowStandardInvalidState):
+    CODE = 'course-spec:no-required-node'
+
+
+class WorkflowCourseSpecMultipleRequiredNodes(WorkflowStandardInvalidState):
+    CODE = 'course-spec:multiple-required-nodes'
+
+
+class WorkflowCourseSpecHasNoCallersAndIsNotRoot(WorkflowStandardInvalidState):
+    CODE = 'course-spec:no-callers-and-non-root'
+
+
+class WorkflowCourseSpecHasCallersAndIsRoot(WorkflowStandardInvalidState):
+    CODE = 'course-spec:callers-and-root'
 
 
 ############################################################################
