@@ -150,6 +150,10 @@ class WorkflowCourseAdvanceDeniedByTransition(WorkflowCourseAdvanceDenied):
     pass
 
 
+class WorkflowCourseAdvanceDeniedByWrongNodeType(WorkflowCourseAdvanceDenied):
+    pass
+
+
 ############################################################################
 #                                                                          #
 # Exception helpers go here. These exceptions are useful for verifiers.    #
