@@ -179,6 +179,7 @@ class Workflow(object):
                 except models.NodeInstance.MultipleObjectsReturned:
                     raise exceptions.WorkflowNoSuchElement(course_instance, _('Multiple children courses exist '
                                                                               'with course code in path'), head)
+
     class WorkflowHelpers(object):
         """
         Helpers to get information from a node (instance or spec).
@@ -238,3 +239,51 @@ class Workflow(object):
                 except models.NodeInstance.DoesNotExist:
                     pass
                 models.NodeInstance.objects.create(course_instance=course_instance, node_spec=node_spec)
+
+        @classmethod
+        def _cancel(cls, course_instance, user, level=0):
+            """
+            Moves the course recursively (if this course has children) to a cancel node.
+              For more information see the _move method in this class.
+            :param course_instance: The course instance being cancelled.
+            :param user: The user invoking the action leading to this call.
+            :param level: The cancellation level. Not directly useful except as information for the
+              user, later in the database.
+            :return:
+            """
+
+            if Workflow.CourseHelpers.is_terminated(course_instance):
+                return
+            node_spec = course_instance.course_spec.verify_has_cancel_node()
+            if Workflow.CourseHelpers.is_splitting(course_instance):
+                next_level = level + 1
+                for branch in course_instance.node_instance.branches.all():
+                    cls._cancel(branch, user, next_level)
+            cls._move(course_instance, node_spec, user)
+            course_instance.term_level = level
+            course_instance.save()
+
+        @classmethod
+        def _join(cls, course_instance, user, level=0):
+            """
+            Moves the course recursively (if this course has children) to a joined node.
+              For more information see the _move method in this class.
+            :param course_instance: The course instance being joined.
+            :param user: The user invoking the action leading to this call.
+            :param level: The joining level. Not directly useful except as information for the
+              user, later in the database.
+            :return:
+            """
+
+            if Workflow.CourseHelpers.is_terminated(course_instance):
+                return
+            node_spec = course_instance.course_spec.verify_has_joined_node()
+            if not node_spec:
+                raise exceptions.WorkflowCourseInstanceNotJoinable(course_instance, _('This course is not joinable'))
+            if Workflow.CourseHelpers.is_splitting(course_instance):
+                next_level = level + 1
+                for branch in course_instance.node_instance.branches.all():
+                    cls._join(branch, user, next_level)
+            cls._move(course_instance, node_spec, user)
+            course_instance.term_level = level
+            course_instance.save()

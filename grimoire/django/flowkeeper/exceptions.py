@@ -285,6 +285,10 @@ class WorkflowCourseInstanceDoesNotAllowForeignNodes(WorkflowExecutionError):
     CODE = 'course-instance:foreign-nodes-not-allowed'
 
 
+class WorkflowCourseInstanceNotJoinable(WorkflowExecutionError):
+    CODE = 'course-instance:not-joinable'
+
+
 ############################################################################
 #                                                                          #
 # Exception helpers go here. These exceptions are useful for verifiers.    #
