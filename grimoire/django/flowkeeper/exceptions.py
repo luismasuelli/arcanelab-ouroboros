@@ -239,6 +239,18 @@ class WorkflowCourseNodeInconsistentJoiner(WorkflowStandardInvalidState):
     CODE = 'node-spec:inconsistent-joiner'
 
 
+class WorkflowCourseTransitionInconsistent(WorkflowStandardInvalidState):
+    CODE = 'transition-spec:inconsistent'
+
+
+class WorkflowCourseTransitionPriorityNotUnique(WorkflowStandardInvalidState):
+    CODE = 'transition-spec:priority-not-unique'
+
+
+class WorkflowCourseTransitionActionNameNotUnique(WorkflowStandardInvalidState):
+    CODE = 'transition-spec:action-name-not-unique'
+
+
 ############################################################################
 #                                                                          #
 # Exception helpers go here. These exceptions are useful for verifiers.    #
