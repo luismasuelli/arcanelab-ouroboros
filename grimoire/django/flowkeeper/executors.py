@@ -9,7 +9,7 @@ from django.utils.translation import ugettext_lazy as _
 from cantrips.iteration import iterable
 from . import exceptions, models
 
-class WorkflowExecutor(object):
+class Workflow(object):
 
     class PermissionsChecker(object):
         """
@@ -144,7 +144,7 @@ class WorkflowExecutor(object):
                     raise exceptions.WorkflowNoSuchElement(course_instance, _('Multiple children courses exist '
                                                                               'with course code in path'), head)
 
-    class WorkflowHelper(object):
+    class WorkflowHelpers(object):
         """
         Helpers to get information from a node (instance or spec).
         """
@@ -162,4 +162,4 @@ class WorkflowExecutor(object):
             """
 
             workflow_instance.verify_exactly_one_parent_course()
-            return WorkflowExecutor.CourseHelpers.find_course(workflow_instance.courses.get(parent__isnull=True), path)
+            return Workflow.CourseHelpers.find_course(workflow_instance.courses.get(parent__isnull=True), path)
