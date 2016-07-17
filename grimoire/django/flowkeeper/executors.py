@@ -11,6 +11,55 @@ from . import exceptions, models
 
 class WorkflowExecutor(object):
 
+    class PermissionsChecker(object):
+        """
+        Permissions checks raise different subclasses of PermissionDenied.
+
+        These checks are all performed against the associated document (since
+          each workflow instance must be tied to a specific model or, say, document,
+          these points can be addressed easily).
+        """
+
+        def can_instantiate_workflow(self, workflow_instance, user):
+            """
+            Verifies the user can create a workflow instance, given the instance and user.
+            :param workflow_instance: The instance to check (will be already valid).
+            :param user: The user to check
+            :return: nothing
+            """
+            # TODO
+
+        def can_cancel_course(self, course_instance, user):
+            """
+            Verifies the user can cancel a course instance, given the instance and user.
+            Both the workflow permission AND the course permission, if any, must be
+              satisfied by the user.
+            :param course_instance: The instance to check (will be already valid).
+            :param user: The user to check
+            :return: nothing
+            """
+            # TODO
+
+        def can_advance_course(self, course_instance, transition, user):
+            """
+            Verifies the user can advance a course instance, given the instance and user.
+            This check involves several cases:
+            - The course instance is started and waiting on an Input node: the user
+              satisfies the node's permission (if any) and the transition's permission
+              (if any).
+            - The course instance is starting and trying to execute the only transition
+              from the only starting node: the user satisfies the transition's permission
+              (if any).
+            - The user is standing on a different node (not ENTER, not INPUT): this is
+              always a failure. There will never be an allowance in this point.
+
+            This method will be called when an explicit call to start or advance a
+              workflow is performed. This means that multiplexer nodes or step nodes
+              which are hit as intermediate steps of an execution will not call this
+              method for their transitions.
+            """
+            # TODO
+
     class CourseHelpers(object):
         """
         Helpers to get information from a course (instance or spec).
