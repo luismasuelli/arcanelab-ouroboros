@@ -331,7 +331,7 @@ class NodeSpec(models.Model):
         exceptions.ensure_field('joiner', self, True, True)
         exceptions.ensure_field('execute_permission', self, True, True)
 
-    def verify_multiplexed_node(self):
+    def verify_multiplexer_node(self):
         self.verify_node_has_inbounds()
         self.verify_node_has_outbounds()
         self.verify_node_has_no_branches()
@@ -363,7 +363,7 @@ class NodeSpec(models.Model):
             if self.type == self.STEP:
                 self.verify_step_node()
             if self.type == self.MULTIPLEXER:
-                self.verify_multiplexed_node()
+                self.verify_multiplexer_node()
             if self.type == self.INPUT:
                 self.verify_input_node()
             if self.type == self.SPLIT:
@@ -447,7 +447,7 @@ class TransitionSpec(models.Model):
         exceptions.ensure_field('action_name', self, True, True)
         exceptions.ensure_field('permission', self, True, True)
 
-    def verify_multiplexed_origin(self):
+    def verify_multiplexer_origin(self):
         exceptions.ensure_field('condition', self)
         exceptions.ensure_field('priority', self)
         exceptions.ensure_field('action_name', self, True, True)
@@ -479,7 +479,7 @@ class TransitionSpec(models.Model):
             if self.origin.type == NodeSpec.STEP:
                 self.verify_step_origin()
             if self.origin.type == NodeSpec.MULTIPLEXER:
-                self.verify_multiplexed_origin()
+                self.verify_multiplexer_origin()
             if self.origin.type == NodeSpec.INPUT:
                 self.verify_input_origin()
             if self.origin.type == NodeSpec.SPLIT:
