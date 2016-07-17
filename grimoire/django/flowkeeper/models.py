@@ -497,44 +497,41 @@ class TransitionSpec(models.Model):
 
 class WorkflowInstance(TrackedLive):
 
-    workflow = models.ForeignKey(Workflow, blank=False, null=False, on_delete=models.CASCADE, related_name='instances')
+    workflow_spec = models.ForeignKey(WorkflowSpec, blank=False, null=False, on_delete=models.CASCADE,
+                                      related_name='instances')
     content_type = models.ForeignKey(ContentType, blank=False, null=False, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField(blank=False, null=False)
     document = GenericForeignKey('content_type', 'object_id')
+
+    def verify_accepts_document(self):
+        try:
+            if self.content_type != self.workflow.document_type:
+                raise exceptions.WorkflowInstanceDoesNotAcceptDocument(
+                    self, _('Workflow instances must reference documents with expected class in their workflow. '
+                            'Current: %s. Expected: %s') % (
+                        self.content_type.model_class().__name__, self.workflow.document_type.model_class().__name__
+                    ))
+        except ObjectDoesNotExist:
+            pass
+
+    def verify_exactly_one_parent_course(self):
+        try:
+            self.courses.get(parent__isnull=True)
+        except CourseInstance.DoesNotExist:
+            raise exceptions.WorkflowInstanceHasNoMainCourse(self, _('No main course is present for the workflow '
+                                                                     'instance (expected one)'))
+        except CourseInstance.MultipleObjectsReturned:
+            raise exceptions.WorkflowInstanceHasNoMainCourse(self, _('Multiple main courses are present for the '
+                                                                     'workflow instance (expected one)'))
 
     def clean(self, keep=True):
         """
         content_type must match workflow's expected content_type
         """
 
-        self.verify_accepts_document(keep=keep)
+        self.verify_accepts_document()
         if self.pk:
-            self.verify_exactly_one_parent_course(keep=keep)
-
-    @wraps_validation_error
-    def verify_accepts_document(self):
-        try:
-            if self.content_type != self.workflow.document_type:
-                raise ValidationError(_('Workflow instances must reference documents with expected class '
-                                        'in their workflow. Current: %s. Expected: %s') % (
-                    self.content_type.model_class().__name__, self.workflow.document_type.model_class().__name__
-                ))
-        except ObjectDoesNotExist:
-            pass
-
-    @wraps_validation_error(_workflow_instance_verify_main_course)
-    def verify_exactly_one_parent_course(self):
-        count = self.courses.filter(parent__isnull=True).count()
-        if count == 0:
-            raise ValidationError(_('No main course is present for the workflow instance (expected one)'),
-                                  code='not-exists')
-        if count > 1:
-            raise ValidationError(_('Multiple main courses are present for the workflow instance (expected one)'),
-                                  code='not-unique')
-
-    def _get_course_by_path(self, path):
-        self.verify_exactly_one_parent_course()
-        return self.courses.get(parent__isnull=True)._get_course_by_path(path)
+            self.verify_exactly_one_parent_course()
 
     class Meta:
         verbose_name = _('Workflow Instance')
