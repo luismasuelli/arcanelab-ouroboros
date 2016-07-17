@@ -18,8 +18,21 @@ class WorkflowExecutor(object):
 
         @classmethod
         def _check_status(cls, course_instance, types, invert=False):
+            """
+            Checks whether the instance's current node has a specific type or list of types.
+              The condition can be inverted to see whether the instance's current node does
+              not have that/those type(s). If the node does not exist, this method returns
+              False. If the node does not exist AND the condition is requested to be inverted,
+              this method returns True.
+            :param course_instance: Instance to ask for.
+            :param types: Node type or iterable with Node types to ask for.
+            :param invert: Whether this condition is inverted or not.
+            :return: Boolean indicating whether the course instance's node's type is among the
+              given types.
+            """
+
             try:
-                return (course_instance.node.type in iterable(types)) ^ bool(invert)
+                return (course_instance.node_instance.node.type in iterable(types)) ^ bool(invert)
             except models.NodeInstance.DoesNotExist:
                 return bool(invert)
 
