@@ -549,7 +549,7 @@ class CourseInstance(TrackedLive):
     workflow_instance = models.ForeignKey(WorkflowInstance, related_name='courses', null=False, blank=False,
                                           on_delete=models.CASCADE)
     parent = models.ForeignKey('NodeInstance', related_name='branches', null=True, blank=True, on_delete=models.CASCADE)
-    course = models.ForeignKey(CourseSpec, null=False, blank=False, on_delete=models.CASCADE)
+    course_spec = models.ForeignKey(CourseSpec, null=False, blank=False, on_delete=models.CASCADE)
     term_level = models.PositiveIntegerField(null=True, blank=True)
 
     def _cancel(self, level=0):
@@ -598,14 +598,14 @@ class CourseInstance(TrackedLive):
         return NodeInstance.objects.create(course_instance=self, node=node)
 
     def verify_consistency(self):
-        exceptions.ensure(lambda obj: self.course.workflow != self.workflow_instance.workflow, self,
+        exceptions.ensure(lambda obj: obj.course_spec.workflow_spec != obj.workflow_instance.workflow_spec, self,
                           _('Referenced course and instance do not refer the same workflow'),
                           exceptions.WorkflowCourseInstanceInconsistent)
-        exceptions.ensure(lambda obj: self.parent and self.parent.course_instance not in self.course.callers.all(),
+        exceptions.ensure(lambda obj: obj.parent and obj.parent.course_instance.course_spec not in self.course_spec.callers.all(),
                           self, _('Referenced course and parent node instance\'s course are not the same'),
                           exceptions.WorkflowCourseInstanceInconsistent)
         try:
-            self.node.verify_consistent_course()
+            self.node_instance.verify_consistent_course()
         except ObjectDoesNotExist:
             pass
 
@@ -626,15 +626,15 @@ class NodeInstance(TrackedLive):
     """
 
     course_instance = models.OneToOneField(CourseInstance, related_name='node_instance', null=False, blank=False)
-    node = models.ForeignKey(NodeSpec, related_name='+', null=False, blank=False)
+    node_spec = models.ForeignKey(NodeSpec, related_name='+', null=False, blank=False)
 
-    @wraps_validation_error(lambda raiser, error: WorkflowInstanceCourseNodeInconsistent(raiser))
-    def verify_consistent_course(self):
-        if self.node.course != self.course_instance.course:
-            raise ValidationError(_('Referenced node and course instance do not refer the same course'))
+    def verify_consistency(self):
+        exceptions.ensure(lambda obj: obj.node_spec.course_spec != obj.course_instance.course_spec, self,
+                          _('Referenced node and course instance do not refer the same course'),
+                          exceptions.WorkflowCourseInstanceNodeInconsistent)
 
     def clean(self, keep=False):
         """
         Cleans consistency
         """
-        self.verify_consistent_course(keep=keep)
+        self.verify_consistent_course()

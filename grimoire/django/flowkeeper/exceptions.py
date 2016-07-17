@@ -267,6 +267,10 @@ class WorkflowCourseInstanceInconsistent(WorkflowStandardInvalidState):
     CODE = 'course-instance:inconsistent'
 
 
+class WorkflowCourseInstanceNodeInconsistent(WorkflowStandardInvalidState):
+    CODE = 'node-instance:inconsistent'
+
+
 ############################################################################
 #                                                                          #
 # Exception helpers go here. These exceptions are useful for verifiers.    #
