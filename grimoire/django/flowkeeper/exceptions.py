@@ -223,6 +223,22 @@ class WorkflowCourseNodeHasMultipleOutbounds(WorkflowStandardInvalidState):
     CODE = 'node-spec:node-has-multiple-outbounds'
 
 
+class WorkflowCourseNodeHasBranches(WorkflowStandardInvalidState):
+    CODE = 'node-spec:node-has-branches'
+
+
+class WorkflowCourseNodeHasNoBranches(WorkflowStandardInvalidState):
+    CODE = 'node-spec:node-has-no-branches'
+
+
+class WorkflowCourseNodeInconsistentBranches(WorkflowStandardInvalidState):
+    CODE = 'node-spec:inconsistent-branches'
+
+
+class WorkflowCourseNodeInconsistentJoiner(WorkflowStandardInvalidState):
+    CODE = 'node-spec:inconsistent-joiner'
+
+
 ############################################################################
 #                                                                          #
 # Exception helpers go here. These exceptions are useful for verifiers.    #
