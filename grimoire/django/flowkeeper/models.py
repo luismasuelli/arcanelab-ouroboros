@@ -1,17 +1,11 @@
 from __future__ import unicode_literals
 from django.contrib.contenttypes.fields import GenericForeignKey
-from django.db import models, transaction
+from django.db import models
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.contenttypes.models import ContentType
 from grimoire.django.tracked.models import TrackedLive
-from django.utils.six import string_types
 from . import exceptions, fields
-from .support import (
-    wraps_validation_error, WorkflowInvalidState, WorkflowInstanceCourseInconsistent,
-    WorkflowInstanceCourseNodeInconsistent, WorkflowCourseNodeCodeDoesNotExist,
-    WorkflowInstanceCourseNodeCannotBeForeign,
-)
 
 
 def valid_document_type(value):
@@ -551,51 +545,6 @@ class CourseInstance(TrackedLive):
     parent = models.ForeignKey('NodeInstance', related_name='branches', null=True, blank=True, on_delete=models.CASCADE)
     course_spec = models.ForeignKey(CourseSpec, null=False, blank=False, on_delete=models.CASCADE)
     term_level = models.PositiveIntegerField(null=True, blank=True)
-
-    def _cancel(self, level=0):
-        if self.terminated:
-            return
-        node = self.course.verify_has_cancel_node()
-        self.term_level = level
-        self.save()
-        if self.splitting:
-            next_level = level + 1
-            for branch in self.node.branches.all():
-                branch._cancel(next_level)
-        self._move(node)
-
-    def _join(self, level=0):
-        if self.terminated:
-            return
-        node = self.course.verify_has_joined_node()
-        if not node:
-            raise WorkflowInvalidState(self, _('This course is not joinable'))
-        self.term_level = level
-        self.save()
-        if self.splitting:
-            next_level = level + 1
-            for branch in self.node.branches.all():
-                branch._join(next_level)
-        self._move(node)
-
-    def _move(self, node):
-        """
-        Moves the course to a new node. Checks existence (if node code specified) or consistency
-          (if node instance specified).
-        :param node: The node instance or code to move this course instance.
-        :return: The new node instance.
-        """
-
-        if isinstance(node, string_types):
-            try:
-                node = self.course.nodes.get(code=node)
-            except NodeSpec.DoesNotExist:
-                raise WorkflowCourseNodeCodeDoesNotExist(self, node)
-        else:
-            if node.course != self.course:
-                raise WorkflowInstanceCourseNodeCannotBeForeign(self, node)
-        self.node.delete()
-        return NodeInstance.objects.create(course_instance=self, node=node)
 
     def verify_consistency(self):
         exceptions.ensure(lambda obj: obj.course_spec.workflow_spec != obj.workflow_instance.workflow_spec, self,
