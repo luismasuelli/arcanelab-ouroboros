@@ -32,8 +32,7 @@ class WorkflowExceptionMixin(object):
 
 class WorkflowInvalidState(WorkflowExceptionMixin, ValidationError):
     """
-    Validation errors are useful on workflow-related checks. The
-      code will be prepopulated by its class member CODE.
+    Validation errors are useful on workflow-related checks.
 
     Methods like .clean() can raise this exception directly but
       most likely this exception will not be raised directly in
@@ -43,11 +42,21 @@ class WorkflowInvalidState(WorkflowExceptionMixin, ValidationError):
     No wrapping is necessary since this is already a ValidationError.
     """
 
-    CODE = 'invalid-state'
+    def __init__(self, raiser, code, message, params=None):
+        ValidationError.__init__(self, message, code, params)
+        WorkflowExceptionMixin.__init__(self, raiser)
+
+
+class WorkflowStandardInvalidState(WorkflowInvalidState):
+    """
+    This subclass of WorkflowInvalidState prepares the used code
+      in the CODE class attribute.
+    """
+
+    CODE = 'invalid'
 
     def __init__(self, raiser, message, params=None):
-        ValidationError.__init__(self, message, self.CODE, params)
-        WorkflowExceptionMixin.__init__(self, raiser)
+        super(WorkflowStandardInvalidState, self).__init__(raiser, self.CODE, message, params)
 
 
 class WorkflowActionDenied(WorkflowExceptionMixin, PermissionDenied):
