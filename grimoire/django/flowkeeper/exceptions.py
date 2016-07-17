@@ -15,6 +15,8 @@ from django.core.exceptions import ValidationError, PermissionDenied
 #   workflow operation in some way, or something was wrong in specific unforeseen   #
 #   parts like user callables in nodes and transitions.                             #
 #   Associated with a 500 error.                                                    #
+# - LookupError: When a required code (e.g. course, or transition) cannot be found. #
+#   Associated with a 404 error.                                                    #
 #                                                                                   #
 #####################################################################################
 
@@ -69,6 +71,17 @@ class WorkflowExecutionError(WorkflowExceptionMixin, RuntimeError):
 
     def __init__(self, raiser, *args, **kwargs):
         RuntimeError.__init__(self, *args, **kwargs)
+        WorkflowExceptionMixin.__init__(self, raiser)
+
+
+class WorkflowNoSuchElement(WorkflowExceptionMixin, LookupError):
+    """
+    This exception will be triggered when trying to find a specific element
+      related to a workflow execution (e.g. course code, transition code).
+    """
+
+    def __init__(self, raiser, *args, **kwargs):
+        LookupError.__init__(self, *args, **kwargs)
         WorkflowExceptionMixin.__init__(self, raiser)
 
 
