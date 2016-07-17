@@ -27,7 +27,11 @@ class Workflow(object):
             :param user: The user to check
             :return: nothing
             """
-            # TODO
+
+            permission = workflow_instance.workflow_spec.create_permission
+            document = workflow_instance.document
+            if permission and not user.has_perm(permission, document):
+                raise exceptions.WorkflowCreateDenied(workflow_instance)
 
         def can_cancel_course(self, course_instance, user):
             """
@@ -38,7 +42,14 @@ class Workflow(object):
             :param user: The user to check
             :return: nothing
             """
-            # TODO
+
+            wf_permission = course_instance.course_spec.workflow_spec.cancel_permission
+            cs_permission = course_instance.course_spec.cancel_permission
+            document = course_instance.workflow_instance.document
+            if wf_permission and not user.has_perm(wf_permission, document):
+                raise exceptions.WorkflowCourseCancelDeniedByWorkflow(course_instance)
+            if cs_permission and not user.has_perm(cs_permission, document):
+                raise exceptions.WorkflowCourseCancelDeniedByCourse(course_instance)
 
         def can_advance_course(self, course_instance, transition, user):
             """
@@ -58,7 +69,27 @@ class Workflow(object):
               which are hit as intermediate steps of an execution will not call this
               method for their transitions.
             """
-            # TODO
+
+            document = course_instance.course_spec.workflow_spec
+            try:
+                node_instance = course_instance.node_instance
+                # Reached this point, the node is either INPUT or a type we should not
+                #   allow.
+                if node_instance.node_spec.type != models.NodeSpec.INPUT:
+                    raise exceptions.WorkflowCourseAdvanceDeniedByWrongNodeType(course_instance)
+                else:
+                    node_permission = node_instance.node_spec.execute_permission
+                    if node_permission and not user.has_perm(node_permission, document):
+                        raise exceptions.WorkflowCourseAdvanceDeniedByNode(course_instance)
+                    transition_permission = transition.permission
+                    if transition_permission and not user.has_perm(transition_permission, document):
+                        raise exceptions.WorkflowCourseAdvanceDeniedByTransition(course_instance)
+            except models.NodeInstance.DoesNotExist:
+                # Reached this point, the workflow course was pending. It seems it is starting.
+                # Right now the transition is the first transition, which has an ENTER node as its origin.
+                transition_permission = transition.permission
+                if transition_permission and not user.has_perm(transition_permission, document):
+                    raise exceptions.WorkflowCourseAdvanceDeniedByTransition(course_instance)
 
     class CourseHelpers(object):
         """
