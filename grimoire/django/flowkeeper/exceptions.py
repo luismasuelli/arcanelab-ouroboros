@@ -100,7 +100,55 @@ class WorkflowNoSuchElement(WorkflowExceptionMixin, LookupError):
 #                                                                          #
 ############################################################################
 
-# Subclasses go here
+class WorkflowCreateDenied(WorkflowActionDenied):
+    """
+    This exception will be triggered when a user attempts to create a
+      workflow instance, but does not have permission for that.
+    """
+
+
+class WorkflowCourseCancelDenied(WorkflowActionDenied):
+    """
+    This exception will be triggered when a user attempts to cancel a
+      workflow course instance, but does not have permission for that.
+
+    Two possible cases here:
+      - The user did not satisfy the workflow permission for cancelling.
+      - The user did not satisfy the (optional) course permission for
+        cancelling.
+
+    When trying to cancel a workflow, the actual attempt is -internally-
+      to cancel the main course.
+    """
+
+
+class WorkflowCourseCancelDeniedByWorkflow(WorkflowCourseCancelDenied):
+    pass
+
+
+class WorkflowCourseCancelDeniedByCourse(WorkflowCourseCancelDenied):
+    pass
+
+
+class WorkflowCourseAdvanceDenied(WorkflowActionDenied):
+    """
+    This exception will be triggered when a user, which is on an Input
+      node, is trying to execute a certain transition (action), but
+      does not have permission for that.
+
+    Two possible cases here:
+      - The user did not satisfy the (optional) node permission.
+      - The user did not satisfy the (optional) transition permission.
+    """
+
+
+class WorkflowCourseAdvanceDeniedByNode(WorkflowCourseAdvanceDenied):
+    pass
+
+
+class WorkflowCourseAdvanceDeniedByTransition(WorkflowCourseAdvanceDenied):
+    pass
+
 
 ############################################################################
 #                                                                          #
