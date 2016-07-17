@@ -12,6 +12,9 @@ from . import exceptions, models
 class WorkflowExecutor(object):
 
     class CourseHelpers(object):
+        """
+        Helpers to get information from a course (instance or spec).
+        """
 
         @classmethod
         def _check_status(cls, course_instance, types, invert=False):
@@ -78,3 +81,23 @@ class WorkflowExecutor(object):
                 except models.NodeInstance.MultipleObjectsReturned:
                     raise exceptions.WorkflowNoSuchElement(course_instance, _('Multiple children courses exist '
                                                                               'with course code in path'), head)
+
+    class WorkflowHelper(object):
+        """
+        Helpers to get information from a node (instance or spec).
+        """
+
+        @classmethod
+        def find_course(cls, workflow_instance, path):
+            """
+            Finds a specific course instance given a target workflow instance and traversing the tree. The path
+              will be broken by separating dot and the descendants will be searched until one course instance is
+              found as described (by course codes) or an exception telling no element was found (or no element
+              can be found) is triggered.
+            :param workflow_instance: The workflow instance to query.
+            :param path: The path to check under the course instance.
+            :return: A descendant, or the first (root), course instance.
+            """
+
+            workflow_instance.verify_exactly_one_parent_course()
+            return WorkflowExecutor.CourseHelpers.find_course(workflow_instance.courses.get(parent__isnull=True), path)
