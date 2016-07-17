@@ -271,6 +271,20 @@ class WorkflowCourseInstanceNodeInconsistent(WorkflowStandardInvalidState):
     CODE = 'node-instance:inconsistent'
 
 
+# WorkflowNoSuchElement subclasses
+
+
+class WorkflowCourseNodeDoesNotExist(WorkflowNoSuchElement):
+    CODE = 'node-spec:does-not-exist'
+
+
+# WorkflowExecutionError subclasses
+
+
+class WorkflowCourseInstanceDoesNotAllowForeignNodes(WorkflowExecutionError):
+    CODE = 'course-instance:foreign-nodes-not-allowed'
+
+
 ############################################################################
 #                                                                          #
 # Exception helpers go here. These exceptions are useful for verifiers.    #

@@ -6,6 +6,7 @@
 
 from __future__ import unicode_literals
 from django.utils.translation import ugettext_lazy as _
+from django.utils.six import string_types
 from cantrips.iteration import iterable
 from . import exceptions, models
 
@@ -20,7 +21,8 @@ class Workflow(object):
           these points can be addressed easily).
         """
 
-        def can_instantiate_workflow(self, workflow_instance, user):
+        @classmethod
+        def can_instantiate_workflow(cls, workflow_instance, user):
             """
             Verifies the user can create a workflow instance, given the instance and user.
             :param workflow_instance: The instance to check (will be already valid).
@@ -33,7 +35,8 @@ class Workflow(object):
             if permission and not user.has_perm(permission, document):
                 raise exceptions.WorkflowCreateDenied(workflow_instance)
 
-        def can_cancel_course(self, course_instance, user):
+        @classmethod
+        def can_cancel_course(cls, course_instance, user):
             """
             Verifies the user can cancel a course instance, given the instance and user.
             Both the workflow permission AND the course permission, if any, must be
@@ -51,7 +54,8 @@ class Workflow(object):
             if cs_permission and not user.has_perm(cs_permission, document):
                 raise exceptions.WorkflowCourseCancelDeniedByCourse(course_instance)
 
-        def can_advance_course(self, course_instance, transition, user):
+        @classmethod
+        def can_advance_course(cls, course_instance, transition, user):
             """
             Verifies the user can advance a course instance, given the instance and user.
             This check involves several cases:
@@ -175,7 +179,6 @@ class Workflow(object):
                 except models.NodeInstance.MultipleObjectsReturned:
                     raise exceptions.WorkflowNoSuchElement(course_instance, _('Multiple children courses exist '
                                                                               'with course code in path'), head)
-
     class WorkflowHelpers(object):
         """
         Helpers to get information from a node (instance or spec).
@@ -195,3 +198,43 @@ class Workflow(object):
 
             workflow_instance.verify_exactly_one_parent_course()
             return Workflow.CourseHelpers.find_course(workflow_instance.courses.get(parent__isnull=True), path)
+
+    class WorkflowRunner(object):
+
+        @classmethod
+        def _move(cls, course_instance, node, user):
+            """
+            Moves the course to a new node. Checks existence (if node code specified) or consistency
+              (if node instance specified).
+            :param course_instance: The course instance to move.
+            :param node: The node instance or code to move this course instance.
+            :param user: The user invoking the action that caused this movement.
+            """
+
+            if isinstance(node, string_types):
+                try:
+                    node_spec = course_instance.course_spec.node_specs.get(code=node)
+                except models.NodeSpec.DoesNotExist:
+                    raise exceptions.WorkflowCourseNodeDoesNotExist(course_instance, node)
+            else:
+                if node.course != course_instance.course_spec:
+                    raise exceptions.WorkflowCourseInstanceDoesNotAllowForeignNodes(course_instance, node)
+                node_spec = node
+
+            # Now we must run the callable, if any.
+            handler = node_spec.landing_handler
+            if handler:
+                handler(course_instance.workflow_instance.document, user)
+
+            # Nodes of type INPUT, EXIT, SPLIT, JOINED and CANCEL are not intermediate execution nodes but
+            #   they end the advancement of a course (EXIT, JOINED and CANCEL do that permanently, while
+            #   INPUT and SPLIT will continue by running other respective workflow calls).
+            #
+            # Nodes of type ENTER, MULTIPLEXER, and STEP are temporary and so they should not be saved like that.
+            if node_spec.type in (models.NodeSpec.INPUT, models.NodeSpec.SPLIT, models.NodeSpec.EXIT,
+                                  models.NodeSpec.CANCEL, models.NodeSpec.JOINED):
+                try:
+                    course_instance.node_instance.delete()
+                except models.NodeInstance.DoesNotExist:
+                    pass
+                models.NodeInstance.objects.create(course_instance=course_instance, node_spec=node_spec)
