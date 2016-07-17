@@ -597,20 +597,13 @@ class CourseInstance(TrackedLive):
         self.node.delete()
         return NodeInstance.objects.create(course_instance=self, node=node)
 
-    @wraps_validation_error(lambda raiser, error: WorkflowInstanceCourseInconsistent(raiser))
-    def verify_consistent_course(self):
-        try:
-            if self.course.workflow != self.workflow_instance.workflow:
-                raise ValidationError(_('Referenced course and instance do not refer the same workflow'))
-        except ObjectDoesNotExist:
-            pass
-
-        try:
-            if self.parent and self.parent.course_instance not in self.course.callers.all():
-                raise ValidationError(_('Referenced course and parent node instance\'s course are not the same'))
-        except ObjectDoesNotExist:
-            pass
-
+    def verify_consistency(self):
+        exceptions.ensure(lambda obj: self.course.workflow != self.workflow_instance.workflow, self,
+                          _('Referenced course and instance do not refer the same workflow'),
+                          exceptions.WorkflowCourseInstanceInconsistent)
+        exceptions.ensure(lambda obj: self.parent and self.parent.course_instance not in self.course.callers.all(),
+                          self, _('Referenced course and parent node instance\'s course are not the same'),
+                          exceptions.WorkflowCourseInstanceInconsistent)
         try:
             self.node.verify_consistent_course()
         except ObjectDoesNotExist:
@@ -620,7 +613,8 @@ class CourseInstance(TrackedLive):
         """
         Cleans consistency
         """
-        self.verify_consistent_course(keep=keep)
+
+        self.verify_consistency()
 
 
 class NodeInstance(TrackedLive):

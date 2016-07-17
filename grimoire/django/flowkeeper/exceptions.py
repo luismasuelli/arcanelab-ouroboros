@@ -251,6 +251,22 @@ class WorkflowCourseTransitionActionNameNotUnique(WorkflowStandardInvalidState):
     CODE = 'transition-spec:action-name-not-unique'
 
 
+class WorkflowInstanceDoesNotAcceptDocument(WorkflowStandardInvalidState):
+    CODE = 'workflow-instance:does-not-accept-document'
+
+
+class WorkflowInstanceHasNoMainCourse(WorkflowStandardInvalidState):
+    CODE = 'workflow-instance:no-main-course'
+
+
+class WorkflowInstanceHasMultipleMainCourses(WorkflowStandardInvalidState):
+    CODE = 'workflow-instance:multiple-main-courses'
+
+
+class WorkflowCourseInstanceInconsistent(WorkflowStandardInvalidState):
+    CODE = 'course-instance:inconsistent'
+
+
 ############################################################################
 #                                                                          #
 # Exception helpers go here. These exceptions are useful for verifiers.    #
