@@ -513,3 +513,34 @@ class Workflow(object):
         workflow_instance.save()
         workflow_instance.courses.create(course_spec=workflow_spec.course_specs.get(depth=0))
         return cls(workflow_instance)
+
+    def get_available_actions(self):
+        """
+        Get all the available actions for the courses in this workflow.
+        :return: A dictionary with 'course.path' => (None|['list', 'of', 'available', 'actions'])
+        """
+
+        self.instance.clean()
+        course_instance = self.instance.courses.get(parent__isnull=True)
+        result = {}
+
+        def traverse_actions(course_instance, path=''):
+            course_instance.clean()
+            if self.CourseHelpers.is_splitting(course_instance):
+                # Splits do not have available actions on their own.
+                # They can only continue traversal on their children
+                #   branches.
+                code = course_instance.course_spec.code
+                new_path = code if not path else "%s.%s" % (path, code)
+                for branch in course_instance.node_instance.branches.all():
+                    traverse_actions(branch, new_path)
+            elif self.CourseHelpers.is_pending(course_instance):
+                # Marking path => None means that the course is not even
+                #   started yet, but it is available to be started.
+                result[path] = None
+            elif self.CourseHelpers.is_waiting(course_instance):
+                # Waiting courses will enumerate actions by their transitions.
+                result[path] = list(course_instance.node_instance.outbounds.all().values_list('action_name', flat=True))
+
+        traverse_actions(course_instance)
+        return result
