@@ -617,8 +617,10 @@ class Workflow(object):
 
     def get_available_actions(self):
         """
-        Get all the available actions for the courses in this workflow.
-        :return: A dictionary with 'course.path' => (None|['list', 'of', 'available', 'actions'])
+        Get all the available actions for the courses in this workflow. For nodes
+        :return: A dictionary with 'course.path' => (
+            'pending' | 'splitting' | 'cancelled' | 'ended' | ['list', 'of', 'available', 'actions']
+        )
         """
 
         self.instance.clean()
@@ -632,16 +634,23 @@ class Workflow(object):
                 # They can only continue traversal on their children
                 #   branches.
                 code = course_instance.course_spec.code
+                result[path] = 'splitting'
                 new_path = code if not path else "%s.%s" % (path, code)
                 for branch in course_instance.node_instance.branches.all():
                     traverse_actions(branch, new_path)
             elif self.CourseHelpers.is_pending(course_instance):
-                # Marking path => None means that the course is not even
+                # Marking path => 'pending' means that the course is not even
                 #   started yet, but it is available to be started.
-                result[path] = None
+                result[path] = 'pending'
             elif self.CourseHelpers.is_waiting(course_instance):
                 # Waiting courses will enumerate actions by their transitions.
                 result[path] = list(course_instance.node_instance.outbounds.all().values_list('action_name', flat=True))
+            elif self.CourseHelpers.is_cancelled(course_instance):
+                result[path] = 'cancelled'
+            elif self.CourseHelpers.is_ended(course_instance):
+                result[path] = 'ended'
+            # NOTES: joined courses will NEVER be listed since they exist for
+            #   just a moment.
 
         traverse_actions(course_instance)
         return result
