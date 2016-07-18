@@ -409,7 +409,9 @@ class TransitionSpec(models.Model):
     # These fields are only allowed for multiplexer
     condition = fields.CallableReferenceField(blank=True, null=True, verbose_name=_('Condition'),
                                               help_text=_('A callable evaluating the condition. Expected only for '
-                                                          'multiplexer nodes'))
+                                                          'multiplexer nodes. The condition will evaluate with '
+                                                          'signature (document, user) and will return a value that '
+                                                          'will be treated as boolean.'))
     priority = models.PositiveSmallIntegerField(blank=True, null=True, verbose_name=_('Priority'),
                                                 help_text=_('A priority value used to order evaluation of condition. '
                                                             'Expected only for multiplexer nodes'))
