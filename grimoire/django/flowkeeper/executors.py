@@ -342,7 +342,11 @@ class Workflow(object):
             #     the multiplexer condition.
             if destination.type == models.NodeSpec.EXIT:
                 if course_instance.parent:
-                    cls._test_split_branch_reached(course_instance, user, destination.exit_value)
+                    course_instance.parent.clean()
+                    parent_course_instance = course_instance.parent.course_instance
+                    parent_course_instance.clean()
+                    exit_value = destination.exit_value
+                    cls._test_split_branch_reached(parent_course_instance, user, course_instance, exit_value)
             elif destination.type == models.NodeSpec.STEP:
                 # After cleaning destination, we know that it has exactly one outbound.
                 transition = destination.outbounds.get()
@@ -370,5 +374,13 @@ class Workflow(object):
                     )
 
         @classmethod
-        def _test_split_branch_reached(cls, course_instance, user, exit_value):
-            pass
+        def _test_split_branch_reached(cls, course_instance, user, reaching_branch, exit_value):
+            """
+            Decides on a parent course instance what to do when a child branch has reached
+              and end.
+            :param course_instance:
+            :param user:
+            :param reaching_branch:
+            :param exit_value:
+            :return:
+            """
