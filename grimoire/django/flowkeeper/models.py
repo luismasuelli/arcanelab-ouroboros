@@ -204,7 +204,7 @@ class NodeSpec(models.Model):
         (JOINED, _('Joined')),
         (INPUT, _('Input')),
         (STEP, _('Step')),
-        (MULTIPLEXER, _('Multiplexed')),
+        (MULTIPLEXER, _('Multiplexer')),
         (SPLIT, _('Split'))
     )
 
@@ -267,6 +267,15 @@ class NodeSpec(models.Model):
         except TransitionSpec.MultipleObjectsReturned:
             raise exceptions.WorkflowCourseNodeHasMultipleOutbounds(self, _('This node must have exactly one outbound'))
 
+    def verify_node_has_many_outbounds(self):
+        try:
+            self.outbounds.get()
+            raise exceptions.WorkflowCourseNodeHasOneOutbound(self, _('This node must have more than one outbound'))
+        except TransitionSpec.DoesNotExist:
+            raise exceptions.WorkflowCourseNodeHasNoOutbound(self, _('This node must have more than one outbound'))
+        except TransitionSpec.MultipleObjectsReturned:
+            return self.outbounds.all()
+
     def verify_node_has_many_branches(self):
         exceptions.ensure(lambda obj: obj.branches.count() > 1, self, _('This node must have at least two branches'))
         try:
@@ -327,7 +336,7 @@ class NodeSpec(models.Model):
 
     def verify_multiplexer_node(self):
         self.verify_node_has_inbounds()
-        self.verify_node_has_outbounds()
+        self.verify_node_has_many_outbounds()
         self.verify_node_has_no_branches()
         exceptions.ensure_field('exit_value', self, True, True)
         exceptions.ensure_field('joiner', self, True, True)

@@ -223,6 +223,10 @@ class WorkflowCourseNodeHasMultipleOutbounds(WorkflowStandardInvalidState):
     CODE = 'node-spec:node-has-multiple-outbounds'
 
 
+class WorkflowCourseNodeHasOneOutbound(WorkflowStandardInvalidState):
+    CODE = 'node-spec:node-has-one-outbound'
+
+
 class WorkflowCourseNodeHasBranches(WorkflowStandardInvalidState):
     CODE = 'node-spec:node-has-branches'
 
