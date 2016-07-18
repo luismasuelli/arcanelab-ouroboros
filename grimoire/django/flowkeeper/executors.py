@@ -341,8 +341,34 @@ class Workflow(object):
             #     one satisfies the condition. It will be an error if no transition satisfies
             #     the multiplexer condition.
             if destination.type == models.NodeSpec.EXIT:
-                pass
+                if course_instance.parent:
+                    cls._test_split_branch_reached(course_instance, user, destination.exit_value)
             elif destination.type == models.NodeSpec.STEP:
-                pass
+                # After cleaning destination, we know that it has exactly one outbound.
+                transition = destination.outbounds.get()
+                # Clean the transition.
+                transition.full_clean()
+                # Run the transition.
+                cls._run_transition(course_instance, transition, user)
             elif destination.type == models.NodeSpec.MULTIPLEXER:
-                pass
+                # After cleaning destination, we know that it has more than one outbound.
+                transitions = list(destination.outbounds.order('priority').all())
+                # Clean all the transitions.
+                for transition in transitions:
+                    transition.full_clean()
+                # Evaluate the conditions and take the transition satisfying the first.
+                # If no transition is picked, an error is thrown.
+                for transition in transitions:
+                    condition = transition.condition
+                    # Condition will be set since we cleaned the transition.
+                    if condition(course_instance.workflow_instance.document, user):
+                        cls._run_transition(course_instance, transition, user)
+                        break
+                else:
+                    raise exceptions.WorkflowCourseNodeMultiplexerDidNotSatisfyAnyCondition(
+                        destination, _('No condition was satisfied when traversing a multiplexer node')
+                    )
+
+        @classmethod
+        def _test_split_branch_reached(cls, course_instance, user, exit_value):
+            pass

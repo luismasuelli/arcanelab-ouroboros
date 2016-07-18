@@ -289,6 +289,10 @@ class WorkflowCourseNodeDoesNotExist(WorkflowNoSuchElement):
 # WorkflowExecutionError subclasses
 
 
+class WorkflowCourseNodeMultiplexerDidNotSatisfyAnyCondition(WorkflowExecutionError):
+    CODE = 'node-spec:multiplexer-did-not-satisfy-any-condition'
+
+
 class WorkflowCourseInstanceDoesNotAllowForeignNodes(WorkflowExecutionError):
     CODE = 'course-instance:foreign-nodes-not-allowed'
 
