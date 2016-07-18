@@ -297,3 +297,52 @@ class Workflow(object):
             cls._move(course_instance, node_spec, user)
             course_instance.term_level = level
             course_instance.save()
+
+        @classmethod
+        def _run_transition(cls, course_instance, transition, user):
+            """
+            Runs a transition in a course instance. Many things are ensured already:
+            - The course has a valid origin (one which can have outbounds).
+            - The transition's origin is the course instance's current node instance's
+              node spec.
+            :param course_instance: The course instance to run the transition on.
+            :param transition: The transition to execute.
+            :param user: The user trying to run by this transition.
+            :return:
+            """
+
+            ####
+            # course_instance and transition are already clean by this point
+            ####
+
+            # Obtain and validate elements to interact with
+            origin = transition.origin
+            origin.full_clean()
+            destination = transition.destination
+            destination.full_clean()
+            course_spec = course_instance.course_spec
+            course_spec.full_clean()
+
+            # Check if we have permission to do this
+            Workflow.PermissionsChecker.can_advance_course(course_instance, transition, user)
+
+            # We move to the destination node
+            cls._move(course_instance, destination, user)
+
+            # We must see what happens next.
+            # ENTER, CANCEL and JOINED types are not valid destination types.
+            # INPUT, SPLIT are types which expect user interaction and will not
+            #   continue the execution.
+            # While...
+            #   STEP nodes will continue the execution from the only transition they have.
+            #   EXIT nodes MAY continue the execution by exciting a parent joiner or completing
+            #     parallel branches (if the parent SPLIT has no joiner and only one outbound).
+            #   MULTIPLEXER nodes will continue from a picked transition, depending on which
+            #     one satisfies the condition. It will be an error if no transition satisfies
+            #     the multiplexer condition.
+            if destination.type == models.NodeSpec.EXIT:
+                pass
+            elif destination.type == models.NodeSpec.STEP:
+                pass
+            elif destination.type == models.NodeSpec.MULTIPLEXER:
+                pass
