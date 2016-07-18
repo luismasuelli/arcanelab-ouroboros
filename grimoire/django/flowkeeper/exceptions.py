@@ -286,39 +286,43 @@ class WorkflowCourseNodeInstanceIncompleteSplitBranchReferences(WorkflowStandard
 # WorkflowNoSuchElement subclasses
 
 
+class WorkflowInstanceDoesNotExist(WorkflowNoSuchElement):
+    pass
+
+
 class WorkflowCourseNodeDoesNotExist(WorkflowNoSuchElement):
-    CODE = 'node-spec:does-not-exist'
+    pass
 
 
 class WorkflowCourseNodeTransitionDoesNotExist(WorkflowNoSuchElement):
-    CODE = 'transition-spec:does-not-exist'
+    pass
 
 
 # WorkflowExecutionError subclasses
 
 
 class WorkflowCourseNodeMultiplexerDidNotSatisfyAnyCondition(WorkflowExecutionError):
-    CODE = 'node-spec:multiplexer-did-not-satisfy-any-condition'
+    pass
 
 
 class WorkflowCourseNodeNoTransitionResolvedAfterCompleteSplitJoin(WorkflowExecutionError):
-    CODE = 'node-spec:no-transition-resolved-after-complete-split-join'
+    pass
 
 
 class WorkflowCourseNodeInvalidSplitResolutionCode(WorkflowExecutionError, TypeError):
-    CODE = 'node-spec:invalid-split-resolution-code'
+    pass
 
 
 class WorkflowCourseNodeBadTransitionActionNamesAfterSplitNode(WorkflowExecutionError):
-    CODE = 'node-spec:bad-transition-action-names-after-split-node'
+    pass
 
 
 class WorkflowCourseInstanceDoesNotAllowForeignNodes(WorkflowExecutionError):
-    CODE = 'course-instance:foreign-nodes-not-allowed'
+    pass
 
 
 class WorkflowCourseInstanceNotJoinable(WorkflowExecutionError):
-    CODE = 'course-instance:not-joinable'
+    pass
 
 
 ############################################################################
