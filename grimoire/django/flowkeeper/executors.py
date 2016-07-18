@@ -222,6 +222,9 @@ class Workflow(object):
                     raise exceptions.WorkflowCourseInstanceDoesNotAllowForeignNodes(course_instance, node)
                 node_spec = node
 
+            # We run validations on node_spec.
+            node_spec.clean()
+
             # Now we must run the callable, if any.
             handler = node_spec.landing_handler
             if handler:
@@ -238,7 +241,12 @@ class Workflow(object):
                     course_instance.node_instance.delete()
                 except models.NodeInstance.DoesNotExist:
                     pass
-                models.NodeInstance.objects.create(course_instance=course_instance, node_spec=node_spec)
+                node_instance = models.NodeInstance.objects.create(course_instance=course_instance, node_spec=node_spec)
+                # For split nodes, we also need to create the pending courses as branches.
+                if node_spec.type == models.NodeSpec.SPLIT:
+                    for branch in node_spec.branches.all():
+                        node_instance.branches.create(workflow_instance=course_instance.workflow_instance,
+                                                      course_spec=branch)
 
         @classmethod
         def _cancel(cls, course_instance, user, level=0):
@@ -255,6 +263,7 @@ class Workflow(object):
             if Workflow.CourseHelpers.is_terminated(course_instance):
                 return
             node_spec = course_instance.course_spec.verify_has_cancel_node()
+            course_instance.clean()
             if Workflow.CourseHelpers.is_splitting(course_instance):
                 next_level = level + 1
                 for branch in course_instance.node_instance.branches.all():
@@ -280,6 +289,7 @@ class Workflow(object):
             node_spec = course_instance.course_spec.verify_has_joined_node()
             if not node_spec:
                 raise exceptions.WorkflowCourseInstanceNotJoinable(course_instance, _('This course is not joinable'))
+            course_instance.clean()
             if Workflow.CourseHelpers.is_splitting(course_instance):
                 next_level = level + 1
                 for branch in course_instance.node_instance.branches.all():
