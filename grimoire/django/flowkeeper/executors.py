@@ -522,7 +522,7 @@ class Workflow(object):
     def start(self, user, path=''):
         """
         Starts the workflow by its main course, or searches a course and starts it.
-        :param user: The user starting the workflow.
+        :param user: The user starting the course or workflow.
         :param path: Optional path to a course in this instance.
         :return:
         """
@@ -530,6 +530,7 @@ class Workflow(object):
         with atomic():
             course_instance = self.CourseHelpers.find_course(self.instance.courses.get(parent__isnull=True), path)
             if self.CourseHelpers.is_pending(course_instance):
+                course_instance.clean()
                 course_instance.course_spec.clean()
                 # Get the enter node (after clean, we are sure there will be an enter node on the spec)
                 enter_node = course_instance.course_spec.node_specs.get(type=models.NodeSpec.ENTER)
@@ -543,6 +544,33 @@ class Workflow(object):
                 raise exceptions.WorkflowCourseInstanceNotPending(
                     course_instance, _('The specified course instance cannot be started because it is not pending')
                 )
+
+    def cancel(self, user, path=''):
+        """
+        Cancels a workflow entirely (by its main course), or searches a course and cancels it.
+        :param user: The user cancelling the course or workflow.
+        :param path: Optional path to a course in this instance.
+        :return:
+        """
+
+        with atomic():
+            course_instance = self.CourseHelpers.find_course(self.instance.courses.get(parent__isnull=True), path)
+            if self.CourseHelpers.is_terminated(course_instance):
+                raise exceptions.WorkflowCourseInstanceAlreadyTerminated(
+                    course_instance, _('Cannot cancel this instance because it is already terminated')
+                )
+            # Check permission on workflow AND on course.
+            course_instance.clean()
+            course_instance.course_spec.clean()
+            self.PermissionsChecker.can_cancel_course(course_instance, user)
+            # Cancel (recursively).
+            self.WorkflowRunner._cancel(course_instance, user)
+            # Trigger the parent joiner, if any.
+            if course_instance.parent:
+                course_instance.parent.clean()
+                parent_course_instance = course_instance.parent.course_instance
+                parent_course_instance.clean()
+                self.WorkflowRunner._test_split_branch_reached(parent_course_instance, user, course_instance)
 
     def get_available_actions(self):
         """

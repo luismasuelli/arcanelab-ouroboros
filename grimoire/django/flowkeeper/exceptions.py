@@ -333,6 +333,10 @@ class WorkflowCourseInstanceNotPending(WorkflowExecutionError):
     pass
 
 
+class WorkflowCourseInstanceAlreadyTerminated(WorkflowExecutionError):
+    pass
+
+
 ############################################################################
 #                                                                          #
 # Exception helpers go here. These exceptions are useful for verifiers.    #
