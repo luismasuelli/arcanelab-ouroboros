@@ -377,7 +377,7 @@ class NodeSpec(models.Model):
     class Meta:
         verbose_name = _('Node')
         verbose_name_plural = _('Nodes')
-        unique_together = (('course', 'code'),)
+        unique_together = (('course_spec', 'code'),)
 
 
 def valid_origin_types(obj):
