@@ -271,11 +271,15 @@ class WorkflowCourseInstanceInconsistent(WorkflowStandardInvalidState):
     CODE = 'course-instance:inconsistent'
 
 
-class WorkflowCourseInstanceNodeInconsistent(WorkflowStandardInvalidState):
+class WorkflowCourseNodeInstanceInconsistent(WorkflowStandardInvalidState):
     CODE = 'node-instance:inconsistent'
 
 
-class WorkflowCourseInstanceNodeIncompleteSplitBranchReferences(WorkflowStandardInvalidState):
+class WorkflowCourseNodeInstanceNonSplitAndHasBranches(WorkflowStandardInvalidState):
+    CODE = 'node-instance:non-split-and-has-branches'
+
+
+class WorkflowCourseNodeInstanceIncompleteSplitBranchReferences(WorkflowStandardInvalidState):
     CODE = 'node-instance:incomplete-split-branch-references'
 
 
