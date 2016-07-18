@@ -582,8 +582,24 @@ class NodeInstance(TrackedLive):
                           _('Referenced node and course instance do not refer the same course'),
                           exceptions.WorkflowCourseInstanceNodeInconsistent)
 
+    def verify_respects_branches(self):
+        """
+        When the node is a SPLIT node, we must ensure every branch is instantiated.
+        """
+
+        if self.node_spec.type == NodeSpec.SPLIT:
+            spec_branches = set(self.node_spec.branches.all().values_list('code', flat=True))
+            instance_branches = set(self.branches.all().values_list('course_spec__code', flat=True))
+            if spec_branches != instance_branches:
+                raise exceptions.WorkflowCourseInstanceNodeIncompleteSplitBranchReferences(
+                    self, _('This split node does not have children biunivocally referencing the branches '
+                            'in the split node spec')
+                )
+
     def clean(self, keep=False):
         """
         Cleans consistency
         """
+
         self.verify_consistent_course()
+        self.verify_respects_branches()

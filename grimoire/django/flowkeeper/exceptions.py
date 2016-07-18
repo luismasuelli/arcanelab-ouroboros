@@ -271,6 +271,10 @@ class WorkflowCourseInstanceNodeInconsistent(WorkflowStandardInvalidState):
     CODE = 'node-instance:inconsistent'
 
 
+class WorkflowCourseInstanceNodeIncompleteSplitBranchReferences(WorkflowStandardInvalidState):
+    CODE = 'node-instance:incomplete-split-branch-references'
+
+
 # WorkflowNoSuchElement subclasses
 
 
