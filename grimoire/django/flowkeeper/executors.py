@@ -7,7 +7,7 @@
 from __future__ import unicode_literals
 from django.utils.translation import ugettext_lazy as _
 from django.utils.six import string_types
-from cantrips.iteration import iterable
+from cantrips.iteration import iterable, items
 from . import exceptions, models
 
 class Workflow(object):
@@ -148,6 +148,21 @@ class Workflow(object):
         def is_terminated(cls, course_instance):
             return cls._check_status(course_instance, (models.NodeSpec.JOINED, models.NodeSpec.EXIT,
                                                        models.NodeSpec.CANCEL))
+
+        @classmethod
+        def get_exit_code(cls, course_instance):
+            """
+            Gets the exit code from a given course instance.
+            :param course_instance: The course instance to get the exit code from.
+            :return: None for non-terminated courses. -1 for joined and cancelled courses, and a non-negative
+              integer for courses reaching an exit node (actually, the exit_value field of the reached exit node).
+            """
+
+            if not cls.is_terminated(course_instance):
+                return None
+            if cls.is_joined(course_instance) or cls.is_cancelled(course_instance):
+                return -1
+            return course_instance.node_instance.node_spec.exit_value
 
         @classmethod
         def find_course(cls, course_instance, path):
@@ -317,11 +332,11 @@ class Workflow(object):
 
             # Obtain and validate elements to interact with
             origin = transition.origin
-            origin.full_clean()
+            origin.clean()
             destination = transition.destination
-            destination.full_clean()
+            destination.clean()
             course_spec = course_instance.course_spec
-            course_spec.full_clean()
+            course_spec.clean()
 
             # Check if we have permission to do this
             Workflow.PermissionsChecker.can_advance_course(course_instance, transition, user)
@@ -345,13 +360,12 @@ class Workflow(object):
                     course_instance.parent.clean()
                     parent_course_instance = course_instance.parent.course_instance
                     parent_course_instance.clean()
-                    exit_value = destination.exit_value
-                    cls._test_split_branch_reached(parent_course_instance, user, course_instance, exit_value)
+                    cls._test_split_branch_reached(parent_course_instance, user, course_instance)
             elif destination.type == models.NodeSpec.STEP:
                 # After cleaning destination, we know that it has exactly one outbound.
                 transition = destination.outbounds.get()
                 # Clean the transition.
-                transition.full_clean()
+                transition.clean()
                 # Run the transition.
                 cls._run_transition(course_instance, transition, user)
             elif destination.type == models.NodeSpec.MULTIPLEXER:
@@ -359,7 +373,7 @@ class Workflow(object):
                 transitions = list(destination.outbounds.order('priority').all())
                 # Clean all the transitions.
                 for transition in transitions:
-                    transition.full_clean()
+                    transition.clean()
                 # Evaluate the conditions and take the transition satisfying the first.
                 # If no transition is picked, an error is thrown.
                 for transition in transitions:
@@ -374,13 +388,77 @@ class Workflow(object):
                     )
 
         @classmethod
-        def _test_split_branch_reached(cls, course_instance, user, reaching_branch, exit_value):
+        def _test_split_branch_reached(cls, course_instance, user, reaching_branch):
             """
-            Decides on a parent course instance what to do when a child branch has reached
-              and end.
-            :param course_instance:
-            :param user:
-            :param reaching_branch:
-            :param exit_value:
+            Decides on a parent course instance what to do when a child branch has reached and end.
+            :param course_instance: The parent course instance being evaluated. This instance will have
+              a node instance referencing a SPLIT node.
+            :param user: The user causing this action by running a transition or cancelling a course.
+            :param reaching_branch: The branch reaching this end. It will be a branch of the
+              `course_instance` argument.
             :return:
             """
+
+            # We validate the SPLIT node spec
+            node_spec = course_instance.node_instance.node_spec
+            node_spec.clean()
+            joiner = node_spec.joiner
+            branches = course_instance.branches.all()
+            if not joiner:
+                # By cleaning we know we will be handling only one transition
+                transition = node_spec.outbounds.get()
+                transition.clean()
+                # If any branch is not terminated, then we do nothing.
+                # Otherwise we will execute the transition.
+                if all(Workflow.CourseHelpers.is_terminated(branch) for branch in branches):
+                    cls._run_transition(course_instance, transition, user)
+            else:
+                # By cleaning we know we will be handling many transitions
+                transitions = node_spec.outbounds.all()
+                # We call the joiner with its arguments
+                reaching_branch_code = reaching_branch.code
+                # Making a dictionary of branch statuses
+                branch_statuses = {branch.course_spec.code: Workflow.CourseHelpers.get_exit_code(branch)
+                                   for branch in branches}
+                # Execute the joiner with (document, branch statuses, and current branch being joined) and
+                #   get the return value.
+                returned = joiner(course_instance.workflow_instance.document, branch_statuses, reaching_branch_code)
+                if returned is None:
+                    # If all the branches have ended (i.e. they have non-None values), this
+                    #   is an error.
+                    # Otherwise, we do nothing.
+                    if all(bool(status) for status in branch_statuses.values()):
+                        raise exceptions.WorkflowCourseNodeNoTransitionResolvedAfterCompleteSplitJoin(
+                            node_spec, _('The joiner callable returned None -not deciding any action- but '
+                                         'all the branches have terminated')
+                        )
+                elif isinstance(returned, string_types):
+                    # The transitions will have unique and present action codes.
+                    # We validate they have unique codes and all codes are present.
+                    # IF the count of distinct action_names is not the same as the count
+                    #   of transitions, this means that either some transitions do not
+                    #   have action name, or have a repeated one.
+                    count = transitions.count()
+                    transition_codes = {transition.action_name for transition in transitions if transition.action_name}
+                    if len(transition_codes) != count:
+                        raise exceptions.WorkflowCourseNodeBadTransitionActionNamesAfterSplitNode(
+                            node_spec, _('Split node transitions must all have a unique action name')
+                        )
+                    try:
+                        # We get the transition by its code.
+                        transition = transitions.get(action_name=returned)
+                    except models.TransitionSpec.DoesNotExist:
+                        raise exceptions.WorkflowCourseNodeTransitionDoesNotExist(node_spec, returned)
+                    # We clean the transition
+                    transition.clean()
+                    # We force a join in any non-terminated branch (i.e. status in None)
+                    for code, status in items(branch_statuses):
+                        if status is None:
+                            cls._join(branches.get(course_spec__code=code), user)
+                    # And THEN we execute our picked transition
+                    cls._run_transition(course_instance, transition, user)
+                else:
+                    # Invalid joiner return value type
+                    raise exceptions.WorkflowCourseNodeInvalidSplitResolutionCode(
+                        node_spec, _('Invalid joiner resolution code type. Expected string or None'), returned
+                    )

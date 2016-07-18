@@ -290,11 +290,27 @@ class WorkflowCourseNodeDoesNotExist(WorkflowNoSuchElement):
     CODE = 'node-spec:does-not-exist'
 
 
+class WorkflowCourseNodeTransitionDoesNotExist(WorkflowNoSuchElement):
+    CODE = 'transition-spec:does-not-exist'
+
+
 # WorkflowExecutionError subclasses
 
 
 class WorkflowCourseNodeMultiplexerDidNotSatisfyAnyCondition(WorkflowExecutionError):
     CODE = 'node-spec:multiplexer-did-not-satisfy-any-condition'
+
+
+class WorkflowCourseNodeNoTransitionResolvedAfterCompleteSplitJoin(WorkflowExecutionError):
+    CODE = 'node-spec:no-transition-resolved-after-complete-split-join'
+
+
+class WorkflowCourseNodeInvalidSplitResolutionCode(WorkflowExecutionError, TypeError):
+    CODE = 'node-spec:invalid-split-resolution-code'
+
+
+class WorkflowCourseNodeBadTransitionActionNamesAfterSplitNode(WorkflowExecutionError):
+    CODE = 'node-spec:bad-transition-action-names-after-split-node'
 
 
 class WorkflowCourseInstanceDoesNotAllowForeignNodes(WorkflowExecutionError):
