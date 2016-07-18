@@ -7,6 +7,7 @@
 from __future__ import unicode_literals
 from django.utils.translation import ugettext_lazy as _
 from django.utils.six import string_types
+from django.contrib.contenttypes.models import ContentType
 from cantrips.iteration import iterable, items
 from . import exceptions, models
 
@@ -462,3 +463,53 @@ class Workflow(object):
                     raise exceptions.WorkflowCourseNodeInvalidSplitResolutionCode(
                         node_spec, _('Invalid joiner resolution code type. Expected string or None'), returned
                     )
+
+    def __init__(self, workflow_instance):
+        """
+        In the end, this whole class is just a Wrapper of a workflow instance,
+          and provides all the related methods.
+        :param workflow_instance: Instance being wrapped.
+        """
+
+        self._instance = workflow_instance
+
+    @property
+    def instance(self):
+        return self._instance
+
+    @classmethod
+    def get(cls, document):
+        """
+        Gets an existent workflow for a given document.
+        :param document:
+        :return:
+        """
+
+        content_type = ContentType.objects.get_for_model(type(document))
+        object_id = document.id
+        try:
+            return cls(models.WorkflowInstance.objects.get(content_type=content_type, object_id=object_id))
+        except models.WorkflowInstance.DoesNotExist:
+            raise exceptions.WorkflowInstanceDoesNotExist(
+                None, _('No workflow instance exists for given document'), document
+            )
+
+    @classmethod
+    def create(cls, workflow_spec, document, user):
+        """
+        Tries to create a workflow instance with this workflow spec, the document, and
+          on behalf of the specified user.
+        :param workflow_spec: The workflow spec to be tied to.
+        :param document: The document to associate.
+        :param user: The user requesting this action. Permission will be checked for him
+          against the document.
+        :return: A wrapper for the newly created instance.
+        """
+
+        workflow_spec.clean()
+        workflow_instance = models.WorkflowInstance(workflow_spec=workflow_spec, document=document)
+        cls.PermissionsChecker.can_instantiate_workflow(workflow_instance, user)
+        workflow_instance.full_clean()
+        workflow_instance.save()
+        workflow_instance.courses.create(course_spec=workflow_spec.course_specs.get(depth=0))
+        return cls(workflow_instance)
