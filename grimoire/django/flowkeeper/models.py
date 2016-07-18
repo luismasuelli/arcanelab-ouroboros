@@ -541,6 +541,7 @@ class WorkflowInstance(TrackedLive):
             self.verify_exactly_one_parent_course()
 
     class Meta:
+        unique_together = ('content_type', 'object_id')
         verbose_name = _('Workflow Instance')
         verbose_name_plural = _('Workflow Instances')
 
