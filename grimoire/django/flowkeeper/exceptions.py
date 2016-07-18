@@ -294,6 +294,10 @@ class WorkflowCourseNodeDoesNotExist(WorkflowNoSuchElement):
     pass
 
 
+class WorkflowCourseInstanceDoesNotExist(WorkflowNoSuchElement):
+    pass
+
+
 class WorkflowCourseNodeTransitionDoesNotExist(WorkflowNoSuchElement):
     pass
 
@@ -322,6 +326,10 @@ class WorkflowCourseInstanceDoesNotAllowForeignNodes(WorkflowExecutionError):
 
 
 class WorkflowCourseInstanceNotJoinable(WorkflowExecutionError):
+    pass
+
+
+class WorkflowCourseInstanceNotPending(WorkflowExecutionError):
     pass
 
 

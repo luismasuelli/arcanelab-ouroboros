@@ -181,7 +181,9 @@ class Workflow(object):
             if path == '':
                 return course_instance
             elif not cls.is_splitting(course_instance):
-                return exceptions.WorkflowNoSuchElement(course_instance, _('Course does not have children'))
+                return exceptions.WorkflowCourseInstanceDoesNotExist(
+                    course_instance, _('Course does not have children')
+                )
             else:
                 course_instance.verify_consistent_course()
                 parts = path.split('.', 1)
@@ -472,6 +474,7 @@ class Workflow(object):
         :param workflow_instance: Instance being wrapped.
         """
 
+        workflow_instance.clean()
         self._instance = workflow_instance
 
     @property
@@ -496,14 +499,14 @@ class Workflow(object):
             )
 
     @classmethod
-    def create(cls, workflow_spec, document, user):
+    def create(cls, user, workflow_spec, document):
         """
         Tries to create a workflow instance with this workflow spec, the document, and
           on behalf of the specified user.
-        :param workflow_spec: The workflow spec to be tied to.
-        :param document: The document to associate.
         :param user: The user requesting this action. Permission will be checked for him
           against the document.
+        :param workflow_spec: The workflow spec to be tied to.
+        :param document: The document to associate.
         :return: A wrapper for the newly created instance.
         """
 
@@ -515,6 +518,31 @@ class Workflow(object):
             workflow_instance.save()
             workflow_instance.courses.create(course_spec=workflow_spec.course_specs.get(depth=0))
             return cls(workflow_instance)
+
+    def start(self, user, path=''):
+        """
+        Starts the workflow by its main course, or searches a course and starts it.
+        :param user: The user starting the workflow.
+        :param path: Optional path to a course in this instance.
+        :return:
+        """
+
+        with atomic():
+            course_instance = self.CourseHelpers.find_course(self.instance.courses.get(parent__isnull=True), path)
+            if self.CourseHelpers.is_pending(course_instance):
+                course_instance.course_spec.clean()
+                # Get the enter node (after clean, we are sure there will be an enter node on the spec)
+                enter_node = course_instance.course_spec.node_specs.get(type=models.NodeSpec.ENTER)
+                self.WorkflowRunner._move(course_instance, enter_node, user)
+                # The enter_node was alreeady cleaned by the last call. We can proceed with the only outbound.
+                transition = enter_node.outbounds.get()
+                transition.clean()
+                # Now we execute the transition with our private runner.
+                self.WorkflowRunner._run_transition(course_instance, transition, user)
+            else:
+                raise exceptions.WorkflowCourseInstanceNotPending(
+                    course_instance, _('The specified course instance cannot be started because it is not pending')
+                )
 
     def get_available_actions(self):
         """
