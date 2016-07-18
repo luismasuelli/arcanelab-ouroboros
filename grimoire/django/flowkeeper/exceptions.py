@@ -321,6 +321,10 @@ class WorkflowCourseNodeBadTransitionActionNamesAfterSplitNode(WorkflowExecution
     pass
 
 
+class WorkflowCourseNodeBadTransitionActionNamesForInputNode(WorkflowExecutionError):
+    pass
+
+
 class WorkflowCourseInstanceDoesNotAllowForeignNodes(WorkflowExecutionError):
     pass
 
@@ -330,6 +334,10 @@ class WorkflowCourseInstanceNotJoinable(WorkflowExecutionError):
 
 
 class WorkflowCourseInstanceNotPending(WorkflowExecutionError):
+    pass
+
+
+class WorkflowCourseInstanceNotWaiting(WorkflowExecutionError):
     pass
 
 

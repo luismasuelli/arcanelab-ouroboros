@@ -545,6 +545,49 @@ class Workflow(object):
                     course_instance, _('The specified course instance cannot be started because it is not pending')
                 )
 
+    def execute(self, user, action_name, path=''):
+        """
+        Executes an action in the workflow by its main course, or searches a course and executes an action on it.
+        :param user: The user executing an action in the course or workflow.
+        :param action_name: The name of the action (transition) to execute.
+        :param path: Optional path to a course in this instance.
+        :return:
+        """
+
+        with atomic():
+            course_instance = self.CourseHelpers.find_course(self.instance.courses.get(parent__isnull=True), path)
+            if self.CourseHelpers.is_waiting(course_instance):
+                course_instance.clean()
+                course_instance.course_spec.clean()
+                node_spec = course_instance.node_instance.node_spec
+                node_spec.clean()
+                transitions = node_spec.outbounds.all()
+                # The transitions will have unique and present action codes.
+                # We validate they have unique codes and all codes are present.
+                # IF the count of distinct action_names is not the same as the count
+                #   of transitions, this means that either some transitions do not
+                #   have action name, or have a repeated one.
+                count = transitions.count()
+                transition_codes = {transition.action_name for transition in transitions if transition.action_name}
+                if len(transition_codes) != count:
+                    raise exceptions.WorkflowCourseNodeBadTransitionActionNamesForInputNode(
+                        node_spec, _('Input node transitions must all have a unique action name')
+                    )
+                # We get the transition or fail with non-existence
+                try:
+                    transition = transitions.get(action_name)
+                except models.TransitionSpec.DoesNotExist:
+                    raise exceptions.WorkflowCourseNodeTransitionDoesNotExist(node_spec, action_name)
+                # We clean the transition
+                transition.clean()
+                # And THEN we execute our picked transition
+                self.WorkflowRunner._run_transition(course_instance, transition, user)
+            else:
+                raise exceptions.WorkflowCourseInstanceNotWaiting(
+                    course_instance, _('No action can be executed in the specified course instance because it is not '
+                                       'waiting for an action to be taken')
+                )
+
     def cancel(self, user, path=''):
         """
         Cancels a workflow entirely (by its main course), or searches a course and cancels it.
