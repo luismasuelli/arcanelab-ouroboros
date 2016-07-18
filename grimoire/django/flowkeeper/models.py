@@ -227,13 +227,15 @@ class NodeSpec(models.Model):
     joiner = fields.CallableReferenceField(blank=True, null=True, verbose_name=_('Joiner'),
                                            help_text=_('A callable that will be triggered every time a split\'s branch '
                                                        'reaches an end. The split\'s branch will trigger this callable '
-                                                       'also providing the exit value (which is a positive integer, or '
-                                                       '-1 if the branch was closed due to a cancellation node). This '
-                                                       'callable must return a valid transition name (existing '
+                                                       'which must return a valid transition name (existing action as '
                                                        'outbound in this node) to leave the split and take an action, '
                                                        'or None to remain in the split and wait for other branches (an '
                                                        'exception will be raised if None is returned but no branch is '
-                                                       'still to finish)'))
+                                                       'still to finish). Its contract is (document, statuses, last) '
+                                                       'being the associated document, a dictionary of branch codes '
+                                                       'and their exit values (None: running; -1: cancelled or joined,'
+                                                       '>= 0: terminated by exit node), and the code of the branch '
+                                                       'being joined (such code will be present in the dictionary)'))
     # Only for input nodes
     execute_permission = models.CharField(max_length=201, blank=True, null=True, verbose_name=_('Cancel Permission'),
                                           help_text=_('Permission code (as <application>.<permission>) to test against '
