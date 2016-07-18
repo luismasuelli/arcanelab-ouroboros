@@ -5,6 +5,7 @@
 ###################################################################################
 
 from __future__ import unicode_literals
+from django.db.transaction import atomic
 from django.utils.translation import ugettext_lazy as _
 from django.utils.six import string_types
 from django.contrib.contenttypes.models import ContentType
@@ -506,13 +507,14 @@ class Workflow(object):
         :return: A wrapper for the newly created instance.
         """
 
-        workflow_spec.clean()
-        workflow_instance = models.WorkflowInstance(workflow_spec=workflow_spec, document=document)
-        cls.PermissionsChecker.can_instantiate_workflow(workflow_instance, user)
-        workflow_instance.full_clean()
-        workflow_instance.save()
-        workflow_instance.courses.create(course_spec=workflow_spec.course_specs.get(depth=0))
-        return cls(workflow_instance)
+        with atomic():
+            workflow_spec.clean()
+            workflow_instance = models.WorkflowInstance(workflow_spec=workflow_spec, document=document)
+            cls.PermissionsChecker.can_instantiate_workflow(workflow_instance, user)
+            workflow_instance.full_clean()
+            workflow_instance.save()
+            workflow_instance.courses.create(course_spec=workflow_spec.course_specs.get(depth=0))
+            return cls(workflow_instance)
 
     def get_available_actions(self):
         """
