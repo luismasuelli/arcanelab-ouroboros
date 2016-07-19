@@ -38,8 +38,10 @@ class Workflow(object):
     - dict_ = workflow.get_available_actions()
 
     When using its namespaced class Workflow.Spec, we refer to specs, like calling:
+    - workflow_spec = Workflow.Spec.install(a workflow spec data)
     - workflow_spec = Workflow.Spec.get(a workflow spec code)
     - workflow = workflow_spec.instantiate(a user, a document) # Calls Workflow.create() with this spec
+    - dict_ = workflow.serialized()
     """
 
     class Spec(object):
@@ -59,14 +61,66 @@ class Workflow(object):
 
             return self.spec.document_type.model_class()
 
-        def serialized(self):
+        def serialized(self, dump=False):
             """
             Serialized representation of this spec.
-            :return: A dict with the specification data for this spec.
+            :param dump: If True, the returned value is a json-parseable string. Otherwise [default]
+              the returned value is a nested dictionary/list structure.
+            :return: A dict with the specification data for this spec, or a json string, depending on
+              whether `dump` is False or True.
             """
 
             spec = self.spec
-            # TODO
+
+            course_specs_data = []
+            workflow_spec_data = {
+                'code': spec.code,
+                'name': spec.name,
+                'description': spec.description,
+                'create_permission': spec.create_permission,
+                'cancel_permission': spec.cancel_permission,
+                'courses': course_specs_data
+            }
+
+            for course_spec in spec.course_specs.all():
+                node_specs_data = []
+                transition_specs_data = []
+                course_specs_data.append({
+                    'code': course_spec.code,
+                    'name': course_spec.name,
+                    'depth': course_spec.depth,
+                    'description': course_spec.description,
+                    'cancel_permission': course_spec.cancel_permission,
+                    'nodes': node_specs_data,
+                    'transitions': transition_specs_data
+                })
+
+                for node_spec in course_spec.node_specs.all():
+                    node_specs_data.append({
+                        'type': node_spec.type,
+                        'code': node_spec.code,
+                        'name': node_spec.name,
+                        'description': node_spec.description,
+                        'landing_handler': node_spec.landing_handler and node_spec.landing_handler.path,
+                        'exit_value': node_spec.exit_value,
+                        'joiner': node_spec.execute_permission and node_spec.execute_permission.path,
+                        'execute_permission': node_spec.execute_permission,
+                        'branches': list(node_spec.branches.values_list('code', flat=True))
+                    })
+
+                for transition_spec in models.TransitionSpec.objects.filter(origin__course_spec=course_spec):
+                    transition_specs_data.append({
+                        'origin': transition_spec.origin.code,
+                        'destination': transition_spec.destination.code,
+                        'action_name': transition_spec.action_name,
+                        'name': transition_spec.name,
+                        'description': transition_spec.description,
+                        'permission': transition_spec.permission,
+                        'condition': transition_spec.condition,
+                        'priority': transition_spec.priority
+                    })
+
+            return json.dumps(workflow_spec_data) if dump else workflow_spec_data
 
         def instantiate(self, user, document):
             """
@@ -194,7 +248,9 @@ class Workflow(object):
                                 workflow_spec, _('No course exists in the workflow spec with such code'), branch
                             )
 
+                #
                 # Massive final validation
+                #
                 # Workflow
                 with wrap_validation_error(workflow_spec):
                     workflow_spec.full_clean()
