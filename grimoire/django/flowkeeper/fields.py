@@ -15,7 +15,7 @@ class CallableReferenceField(CharField):
         super(CallableReferenceField, self).__init__(*args, **kwargs)
 
     def to_python(self, value):
-        return value if isinstance(value, CallableReference) else self.to_python(value)
+        return value if isinstance(value, CallableReference) else CallableReference(path=value)
 
     def from_db_value(self, value, expression, connection, context):
         return value and CallableReference(path=value)
