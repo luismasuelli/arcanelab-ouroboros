@@ -39,7 +39,7 @@ class WorkflowSpec(models.Model):
     code = models.SlugField(max_length=20, null=False, blank=False, unique=True, verbose_name=_('Code'),
                             help_text=_('Internal (unique) code'))
     name = models.CharField(max_length=60, null=False, blank=False, verbose_name=_('Name'))
-    description = models.CharField(max_length=100, null=False, blank=False, verbose_name=_('Description'))
+    description = models.TextField(max_length=1023, null=False, blank=False, verbose_name=_('Description'))
     create_permission = models.CharField(max_length=201, blank=True, null=True, verbose_name=_('Create Permission'),
                                          help_text=_('Permission code (as <application>.<permission>) to test against '
                                                      'when a workflow instance is created. The user who intends to '
@@ -100,6 +100,8 @@ class CourseSpec(models.Model):
                                       help_text=_('Workflow spec this course spec belongs to'))
     code = models.SlugField(max_length=20, null=False, blank=True, verbose_name=_('Code'),
                             help_text=_('Internal (unique) code'))
+    name = models.CharField(max_length=60, null=False, blank=False, verbose_name=_('Name'))
+    description = models.TextField(max_length=1023, null=False, blank=False, verbose_name=_('Description'))
     depth = models.PositiveSmallIntegerField(verbose_name=_('Depth'), null=False, blank=False,
                                              help_text=_('Tells the depth of this course. The main course must be '
                                                          'of depth 0, while successive descendants should increment '
@@ -214,6 +216,8 @@ class NodeSpec(models.Model):
                                     help_text=_('Course spec this node spec belongs to'))
     code = models.SlugField(max_length=20, null=False, blank=False, verbose_name=_('Code'),
                             help_text=_('Internal (unique) code'))
+    name = models.CharField(max_length=60, null=False, blank=False, verbose_name=_('Name'))
+    description = models.TextField(max_length=1023, null=False, blank=False, verbose_name=_('Description'))
     landing_handler = fields.CallableReferenceField(blank=True, null=True, verbose_name=_('Landing Handler'),
                                                     help_text=_('A callable that will triggered when this node is '
                                                                 'reached. The expected signature is (document, user) '
@@ -401,9 +405,11 @@ class TransitionSpec(models.Model):
                                     related_name='inbounds', validators=[valid_destination_types],
                                     verbose_name=_('Destination'), help_text=_('Destination node'))
     # These fields are only allowed for split and input
-    action_name = models.SlugField(max_length=30, blank=True, null=True, verbose_name=_('Action Name'),
+    action_name = models.SlugField(max_length=20, blank=True, null=True, verbose_name=_('Action Name'),
                                    help_text=_('Action name for this transition. Unique with respect to the origin '
                                                'node. Expected only for split and input nodes'))
+    name = models.CharField(max_length=60, null=False, blank=False, verbose_name=_('Name'))
+    description = models.TextField(max_length=1023, null=False, blank=False, verbose_name=_('Description'))
     # These fields are only allowed for input
     permission = models.CharField(max_length=201, blank=True, null=True, verbose_name=_('Permission'),
                                   help_text=_('Permission code (as <application>.<permission>) to test against. It is '
