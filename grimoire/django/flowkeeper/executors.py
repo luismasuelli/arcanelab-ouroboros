@@ -5,14 +5,214 @@
 ###################################################################################
 
 from __future__ import unicode_literals
+from contextlib import contextmanager
+from django.core.exceptions import ValidationError
 from django.db.transaction import atomic
 from django.utils.translation import ugettext_lazy as _
 from django.utils.six import string_types
 from django.contrib.contenttypes.models import ContentType
 from cantrips.iteration import iterable, items
 from . import exceptions, models
+import json
+
+
+@contextmanager
+def wrap_validation_error(obj):
+    try:
+        yield
+    except exceptions.WorkflowInvalidState:
+        raise
+    except ValidationError as e:
+        raise exceptions.WorkflowInvalidState(obj, e)
+
 
 class Workflow(object):
+    """
+    Workflow helpers. When used directly, we refer to instances, like calling:
+
+    - workflow = Workflow.get(a document)
+    - workflow = Workflow.create(a user, a wrapped spec, a document)
+    - workflow.start(a user[, 'path.to.course'])
+    - workflow.cancel(a user[, 'path.to.course'])
+    - workflow.execute(a user, an action[, 'path.to.course'])
+    - dict_ = workflow.get_available_actions()
+
+    When using its namespaced class Workflow.Spec, we refer to specs, like calling:
+    - workflow_spec = Workflow.Spec.get(a workflow spec code)
+    - workflow = workflow_spec.instantiate(a user, a document) # Calls Workflow.create() with this spec
+    """
+
+    class Spec(object):
+
+        def __init__(self, workflow_spec):
+            self._spec = workflow_spec
+
+        @property
+        def spec(self):
+            return self._spec
+
+        def document_class(self):
+            """
+            Document class for this spec.
+            :return: The document class.
+            """
+
+            return self.spec.document_type.model_class()
+
+        def serialized(self):
+            """
+            Serialized representation of this spec.
+            :return: A dict with the specification data for this spec.
+            """
+
+            spec = self.spec
+            # TODO
+
+        def instantiate(self, user, document):
+            """
+            Instantiates the spec.
+            :param user: The user trying to instantiate the workflow.
+            :param document: The document instance to associate to the workflow instance.
+            :return: A wrapped workflow instance.
+            """
+
+            return Workflow.create(user, self, document)
+
+        @classmethod
+        def install(cls, spec_data, model):
+            """
+            Takes a json specification (either as string or python dict) and the model to associate,
+              and tries to create a new workflow spec.
+            :param spec_data: The data used to install the spec. Either json or a dict.
+            :param model: The model to associate the spec with.
+            :return: The new spec, wrapped by this class.
+            """
+
+            if isinstance(spec_data, string_types):
+                spec_data = json.loads(spec_data)
+            if not isinstance(spec_data, dict):
+                raise TypeError('Spec data to install must be a valid json evaluating as a dict, or '
+                                'a dict itself')
+            if not issubclass(model, models.Document) or model is models.Document or model._meta.abstract:
+                raise TypeError('Model to associate must be a strict concrete descendant class of Document')
+
+            with atomic():
+                code = spec_data.get('code')
+                name = spec_data.get('name')
+                description = spec_data.get('description')
+                create_permission = spec_data.get('create_permission')
+                cancel_permission = spec_data.get('cancel_permission')
+                workflow_spec = models.WorkflowSpec(code=code, name=name, description=description,
+                                                    create_permission=create_permission,
+                                                    cancel_permission=cancel_permission,
+                                                    document_type=ContentType.objects.get_for_model(model))
+                with wrap_validation_error(workflow_spec):
+                    workflow_spec.full_clean()
+                workflow_spec.save()
+                course_specs_data = spec_data.get('courses') or []
+
+                branches_map = {}  # node_spec => [course__code, ...]
+
+                def install_course(course_spec_data):
+                    code = course_spec_data.get('code')
+                    name = course_spec_data.get('name')
+                    depth = course_spec_data.get('depth') or 0
+                    description = course_spec_data.get('description')
+                    cancel_permission = course_spec_data.get('cancel_permission')
+                    node_specs_data = course_spec_data.get('nodes') or []
+                    transitions_specs_data = course_spec_data.get('transitions') or []
+
+                    # Install the course
+                    course_spec = models.CourseSpec(workflow_spec=workflow_spec, code=code, name=name, depth=depth,
+                                                    description=description, cancel_permission=cancel_permission)
+                    with wrap_validation_error(course_spec):
+                        course_spec.full_clean()
+                    course_spec.save()
+
+                    # Install the course nodes
+                    for node_spec_data in node_specs_data:
+                        type_ = node_spec_data.get('type')
+                        code = node_spec_data.get('code')
+                        name = node_spec_data.get('name')
+                        description = node_spec_data.get('description')
+                        landing_handler = node_spec_data.get('landing_handler')
+                        exit_value = node_spec_data.get('exit_value')
+                        joiner = node_spec_data.get('joiner')
+                        execute_permission = node_spec_data.get('execute_permission')
+                        node_spec = models.NodeSpec(type=type_, code=code, name=name, description=description,
+                                                    landing_handler=landing_handler, exit_value=exit_value,
+                                                    joiner=joiner, execute_permission=execute_permission,
+                                                    course_spec=course_spec)
+                        with wrap_validation_error(node_spec):
+                            node_spec.full_clean()
+                        node_spec.save()
+
+                        # Deferring branches installation
+                        if type_ == models.NodeSpec.SPLIT:
+                            branches_map[node_spec] = node_spec_data.get('branches') or []
+
+                    # Install the node transitions
+                    for transition_spec_data in transitions_specs_data:
+                        origin_code = transition_spec_data.get('origin')
+                        destination_code = transition_spec_data.get('destination')
+                        action_name = transition_spec_data.get('action_name')
+                        name = transition_spec_data.get('name')
+                        description = transition_spec_data.get('description')
+                        permission = transition_spec_data.get('permission')
+                        condition = transition_spec_data.get('condition')
+                        priority = transition_spec_data.get('priority')
+
+                        try:
+                            origin = course_spec.node_specs.get(code=origin_code)
+                        except models.NodeSpec.DoesNotExist:
+                            raise exceptions.WorkflowCourseNodeTransitionDoesNotExist(course_spec, origin_code)
+
+                        try:
+                            destination = course_spec.node_specs.get(code=destination_code)
+                        except models.NodeSpec.DoesNotExist:
+                            raise exceptions.WorkflowCourseNodeTransitionDoesNotExist(course_spec, destination_code)
+
+                        transition = models.TransitionSpec(origin=origin, destination=destination, name=name,
+                                                           action_name=action_name, description=description,
+                                                           permission=permission, condition=condition,
+                                                           priority=priority)
+                        with wrap_validation_error(transition):
+                            transition.full_clean()
+                        transition.save()
+
+                # Install the courses
+                for course_spec_data in course_specs_data:
+                    install_course(course_spec_data)
+
+                # Link the branches
+                for node_spec, branches in branches_map:
+                    for branch in branches:
+                        try:
+                            node_spec.branches.add(workflow_spec.course_specs.get(code=branch))
+                        except models.CourseSpec.DoesNotExist:
+                            raise exceptions.WorkflowCourseNodeDoesNotExist(
+                                workflow_spec, _('No course exists in the workflow spec with such code'), branch
+                            )
+
+                # Massive final validation
+                # Workflow
+                with wrap_validation_error(workflow_spec):
+                    workflow_spec.full_clean()
+                # Courses
+                for course_spec in workflow_spec.course_specs.all():
+                    with wrap_validation_error(course_spec):
+                        course_spec.full_clean()
+                    # Nodes
+                    for node_spec in course_spec.node_specs.all():
+                        with wrap_validation_error(node_spec):
+                            node_spec.full_clean()
+                    # Transitions
+                    for transition_spec in models.TransitionSpec.objects.filter(origin__course_spec=course_spec):
+                        with wrap_validation_error(transition_spec):
+                            transition_spec.full_clean()
+
+                # Everything is valid, so we return the wrapped instance
+                return cls(workflow_spec)
 
     class PermissionsChecker(object):
         """
@@ -510,8 +710,9 @@ class Workflow(object):
         :return: A wrapper for the newly created instance.
         """
 
+        # We only care about the actual spec here, which is already cleaned.
+        workflow_spec = workflow_spec.spec
         with atomic():
-            workflow_spec.clean()
             workflow_instance = models.WorkflowInstance(workflow_spec=workflow_spec, document=document)
             cls.PermissionsChecker.can_instantiate_workflow(workflow_instance, user)
             workflow_instance.full_clean()
