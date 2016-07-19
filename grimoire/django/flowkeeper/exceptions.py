@@ -44,7 +44,7 @@ class WorkflowInvalidState(WorkflowExceptionMixin, ValidationError):
     No wrapping is necessary since this is already a ValidationError.
     """
 
-    def __init__(self, raiser, code, message, params=None):
+    def __init__(self, raiser, message, code=None, params=None):
         ValidationError.__init__(self, message, code, params)
         WorkflowExceptionMixin.__init__(self, raiser)
 
@@ -58,7 +58,7 @@ class WorkflowStandardInvalidState(WorkflowInvalidState):
     CODE = 'invalid'
 
     def __init__(self, raiser, message, params=None):
-        super(WorkflowStandardInvalidState, self).__init__(raiser, self.CODE, message, params)
+        super(WorkflowStandardInvalidState, self).__init__(raiser, message, self.CODE, params)
 
 
 class WorkflowActionDenied(WorkflowExceptionMixin, PermissionDenied):
