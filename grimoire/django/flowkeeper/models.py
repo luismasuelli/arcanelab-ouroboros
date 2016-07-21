@@ -285,9 +285,9 @@ class NodeSpec(models.Model):
     def verify_node_has_many_branches(self):
         exceptions.ensure(lambda obj: obj.branches.count() > 1, self, _('This node must have at least two branches'))
         try:
-            if self.branches.exclude(depth=self.course_spec.depth+1).exists():
+            if self.branches.exclude(depth__gt=self.course_spec.depth).exists():
                 raise exceptions.WorkflowCourseNodeInconsistentBranches(self, _('Split nodes must branch to courses '
-                                                                                'with depth=(depth)+1'))
+                                                                                'with greater depth'))
             if self.branches.exclude(workflow_spec=self.course_spec.workflow).exists():
                 raise exceptions.WorkflowCourseNodeInconsistentBranches(self, _('Split nodes must branch to courses in '
                                                                                 'the same workflow'))
