@@ -88,7 +88,6 @@ class Workflow(object):
                 course_specs_data.append({
                     'code': course_spec.code,
                     'name': course_spec.name,
-                    'depth': course_spec.depth,
                     'description': course_spec.description,
                     'cancel_permission': course_spec.cancel_permission,
                     'nodes': node_specs_data,
@@ -170,14 +169,13 @@ class Workflow(object):
                 def install_course(course_spec_data):
                     code = course_spec_data.get('code')
                     name = course_spec_data.get('name')
-                    depth = course_spec_data.get('depth') or 0
                     description = course_spec_data.get('description')
                     cancel_permission = course_spec_data.get('cancel_permission')
                     node_specs_data = course_spec_data.get('nodes') or []
                     transitions_specs_data = course_spec_data.get('transitions') or []
 
                     # Install the course
-                    course_spec = models.CourseSpec(workflow_spec=workflow_spec, code=code, name=name, depth=depth,
+                    course_spec = models.CourseSpec(workflow_spec=workflow_spec, code=code, name=name,
                                                     description=description, cancel_permission=cancel_permission)
                     with wrap_validation_error(course_spec):
                         course_spec.full_clean()
@@ -251,18 +249,18 @@ class Workflow(object):
                 #
                 # Massive final validation
                 #
-                # Workflow
+                # Workflow (one main course; acyclic)
                 with wrap_validation_error(workflow_spec):
                     workflow_spec.full_clean()
-                # Courses
+                # Courses (having required nodes; having SPLIT parents, if any; having valid code)
                 for course_spec in workflow_spec.course_specs.all():
                     with wrap_validation_error(course_spec):
                         course_spec.full_clean()
-                    # Nodes
+                    # Nodes (inbounds, outbounds, and attributes)
                     for node_spec in course_spec.node_specs.all():
                         with wrap_validation_error(node_spec):
                             node_spec.full_clean()
-                    # Transitions
+                    # Transitions (consistency, attributes, wrt origin node)
                     for transition_spec in models.TransitionSpec.objects.filter(origin__course_spec=course_spec):
                         with wrap_validation_error(transition_spec):
                             transition_spec.full_clean()

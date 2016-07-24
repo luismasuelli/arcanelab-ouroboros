@@ -198,14 +198,13 @@ class CourseSpec(models.Model):
         - At least one non-"cancel" exit node.
         """
 
-        if (self.code == '') == (self.callers.exists()):
-            raise ValidationError(_('A course should have an empty code if, and only if, it is the root'))
-
         if self.pk:
             self.verify_has_enter_node()
             self.verify_has_cancel_node()
             self.verify_has_exit_nodes()
             self.verify_hierarchy()
+            if (self.code == '') == (self.callers.exists()):
+                raise ValidationError(_('A course should have an empty code if, and only if, it is the root'))
 
     class Meta:
         verbose_name = _('Course Spec')
