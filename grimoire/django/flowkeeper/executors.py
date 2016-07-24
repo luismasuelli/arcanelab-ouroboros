@@ -144,8 +144,7 @@ class Workflow(object):
             if isinstance(spec_data, string_types):
                 spec_data = json.loads(spec_data)
             if not isinstance(spec_data, dict):
-                raise TypeError('Spec data to install must be a valid json evaluating as a dict, or '
-                                'a dict itself')
+                raise TypeError('Spec data to install must be a valid json evaluating as a dict, or a dict itself')
             if not issubclass(model, models.Document) or model is models.Document or model._meta.abstract:
                 raise TypeError('Model to associate must be a strict concrete descendant class of Document')
 

@@ -70,7 +70,7 @@ class WorkflowSpec(models.Model):
             raise exceptions.WorkflowSpecHasMultipleMainCourses(self, _('Multiple main courses are defined for the '
                                                                         'workflow (expected one)'))
 
-    def verify_acyclical_courses(self):
+    def verify_acyclic_courses(self):
         """
         Verifies the whole courses set is acyclic in dependencies. This verification was
           moved from courses to workflow.
@@ -114,7 +114,7 @@ class WorkflowSpec(models.Model):
         """
 
         if self.pk:
-            self.verify_acyclical_courses()
+            self.verify_acyclic_courses()
 
     class Meta:
         verbose_name = _('Workflow Spec')
