@@ -37,7 +37,6 @@ class Migration(migrations.Migration):
                 ('code', models.SlugField(blank=True, help_text='Internal (unique) code', max_length=20, verbose_name='Code')),
                 ('name', models.CharField(max_length=60, verbose_name='Name')),
                 ('description', models.TextField(max_length=1023, verbose_name='Description')),
-                ('depth', models.PositiveSmallIntegerField(help_text='Tells the depth of this course. The main course must be of depth 0, while successive descendants should increment the level by 1', verbose_name='Depth')),
                 ('cancel_permission', models.CharField(blank=True, help_text='Permission code (as <application>.<permission>) to test against when this course instance is cancelled. The user who intends to cancel this course instance must satisfy this permission against the associated document.', max_length=201, null=True, verbose_name='Cancel Permission')),
             ],
             options={

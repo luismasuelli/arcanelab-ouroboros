@@ -62,13 +62,50 @@ class WorkflowSpec(models.Model):
         """
 
         try:
-            return self.course_specs.get(depth=0)
+            return self.course_specs.get(callers__isnull=True)
         except CourseSpec.DoesNotExist:
             raise exceptions.WorkflowSpecHasNoMainCourse(self, _('No main course is defined for the workflow '
                                                                  '(expected one)'))
         except CourseSpec.MultipleObjectsReturned:
             raise exceptions.WorkflowSpecHasMultipleMainCourses(self, _('Multiple main courses are defined for the '
                                                                         'workflow (expected one)'))
+
+    def verify_acyclical_courses(self):
+        """
+        Verifies the whole courses set is acyclic in dependencies. This verification was
+          moved from courses to workflow.
+        :return:
+        """
+
+        traversed_courses = set()
+        exploring_courses = set()
+        root = self.verify_exactly_one_parent_course()
+
+        def set_exploring(courses):
+            # Set the new nodes being explored.
+            # Also add these new nodes to the traversed ones.
+            codes = set(course.code for course in courses)
+            traversed_courses.update(codes)
+            exploring_courses.clear()
+            exploring_courses.update(courses)
+            return courses
+
+        def get_traversable_children(courses):
+            return set(branch for course in courses
+                              for node in course.node_specs.all()
+                              for branch in node.branches.all()
+                              if set(caller.course_spec.code for caller in branch.callers.all()) <= traversed_courses)
+
+        children = set_exploring([root])
+        while True:
+            children = set_exploring(get_traversable_children(children))
+            if not children:
+                break
+
+        if self.course_specs.exclude(code__in=traversed_courses).exists():
+            raise exceptions.WorkflowSpecHasCircularDependentCourses(
+                self, _('This workflow has at least one circular dependent course')
+            )
 
     def clean(self):
         """
@@ -77,7 +114,7 @@ class WorkflowSpec(models.Model):
         """
 
         if self.pk:
-            self.verify_exactly_one_parent_course()
+            self.verify_acyclical_courses()
 
     class Meta:
         verbose_name = _('Workflow Spec')
@@ -102,10 +139,6 @@ class CourseSpec(models.Model):
                             help_text=_('Internal (unique) code'))
     name = models.CharField(max_length=60, null=False, blank=False, verbose_name=_('Name'))
     description = models.TextField(max_length=1023, null=False, blank=False, verbose_name=_('Description'))
-    depth = models.PositiveSmallIntegerField(verbose_name=_('Depth'), null=False, blank=False,
-                                             help_text=_('Tells the depth of this course. The main course must be '
-                                                         'of depth 0, while successive descendants should increment '
-                                                         'the level by 1'))
     cancel_permission = models.CharField(max_length=201, blank=True, null=True, verbose_name=_('Cancel Permission'),
                                          help_text=_('Permission code (as <application>.<permission>) to test against '
                                                      'when this course instance is cancelled. The user who intends to '
@@ -150,17 +183,12 @@ class CourseSpec(models.Model):
             pass
 
     def verify_hierarchy(self):
-        if self.deph > 0:
-            if not self.callers.exists() or self.callers.exclude(course_spec__depth__lt=self.depth,
-                                                                 type=NodeSpec.SPLIT).exists():
-                raise exceptions.WorkflowCourseSpecHasNoCallersAndIsNotRoot(
-                    self, _('A non-root workflow course is expected to have at least one calling node. Each '
-                            'calling node must be a split node, and have a lower depth.')
-                )
+        if self.callers.exists():
             self.verify_has_joined_node()
-        else:
-            if self.callers.exists():
-                raise exceptions.WorkflowCourseSpecHasCallersAndIsRoot(self, _('A root node cannot have callers'))
+            if self.callers.exclude(type=NodeSpec.SPLIT).exists():
+                raise exceptions.WorkflowCourseSpecHasInvalidCallers(
+                    self, _('A child workflow course is expected to have only SPLIT type calling nodes')
+                )
 
     def clean(self):
         """
@@ -170,8 +198,8 @@ class CourseSpec(models.Model):
         - At least one non-"cancel" exit node.
         """
 
-        if (self.code == '') ^ (self.depth == 0):
-            raise ValidationError(_('A course should have an empty code if, and only if, its depth is zero'))
+        if (self.code == '') == (self.callers.exists()):
+            raise ValidationError(_('A course should have an empty code if, and only if, it is the root'))
 
         if self.pk:
             self.verify_has_enter_node()
@@ -285,9 +313,6 @@ class NodeSpec(models.Model):
     def verify_node_has_many_branches(self):
         exceptions.ensure(lambda obj: obj.branches.count() > 1, self, _('This node must have at least two branches'))
         try:
-            if self.branches.exclude(depth__gt=self.course_spec.depth).exists():
-                raise exceptions.WorkflowCourseNodeInconsistentBranches(self, _('Split nodes must branch to courses '
-                                                                                'with greater depth'))
             if self.branches.exclude(workflow_spec=self.course_spec.workflow).exists():
                 raise exceptions.WorkflowCourseNodeInconsistentBranches(self, _('Split nodes must branch to courses in '
                                                                                 'the same workflow'))

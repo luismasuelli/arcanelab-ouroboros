@@ -187,6 +187,10 @@ class WorkflowSpecHasMultipleMainCourses(WorkflowStandardInvalidState):
     CODE = 'workflow-spec:multiple-main-courses'
 
 
+class WorkflowSpecHasCircularDependentCourses(WorkflowStandardInvalidState):
+    CODE = 'workflow-spec:circular-dependent-courses'
+
+
 class WorkflowCourseSpecHasNoRequiredNode(WorkflowStandardInvalidState):
     CODE = 'course-spec:no-required-node'
 
@@ -195,12 +199,8 @@ class WorkflowCourseSpecMultipleRequiredNodes(WorkflowStandardInvalidState):
     CODE = 'course-spec:multiple-required-nodes'
 
 
-class WorkflowCourseSpecHasNoCallersAndIsNotRoot(WorkflowStandardInvalidState):
-    CODE = 'course-spec:no-callers-and-non-root'
-
-
-class WorkflowCourseSpecHasCallersAndIsRoot(WorkflowStandardInvalidState):
-    CODE = 'course-spec:callers-and-root'
+class WorkflowCourseSpecHasInvalidCallers(WorkflowStandardInvalidState):
+    CODE = 'course-spec:invalid-callers'
 
 
 class WorkflowCourseNodeHasInbounds(WorkflowStandardInvalidState):
