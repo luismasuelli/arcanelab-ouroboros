@@ -535,6 +535,8 @@ class Workflow(object):
                 if node_spec.type == models.NodeSpec.SPLIT:
                     for branch in node_spec.branches.all():
                         cls._instantiate_course(course_instance.workflow_instance, branch, node_instance, user)
+                # We must log the step.
+                models.CourseInstanceLog.objects.create(user=user, course_instance=course_instance, node_spec=node_spec)
 
         @classmethod
         def _cancel(cls, course_instance, user, level=0):

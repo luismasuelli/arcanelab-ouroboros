@@ -4,6 +4,7 @@ from django.db import models
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.contenttypes.models import ContentType
+from django.conf import settings
 from grimoire.django.tracked.models import TrackedLive
 from . import exceptions, fields
 
@@ -652,3 +653,15 @@ class NodeInstance(TrackedLive):
 
         self.verify_consistent_course()
         self.verify_respects_branches()
+
+
+class CourseInstanceLog(models.Model):
+    """
+    This class is not intended to be used directly but just be present in the database.
+    """
+
+    created_on = models.DateTimeField(auto_now_add=True, null=False)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, null=False, blank=False, on_delete=models.CASCADE)
+    course_instance = models.ForeignKey(CourseInstance, null=False, blank=False, on_delete=models.CASCADE,
+                                        related_name='logs')
+    node_spec = models.ForeignKey(NodeSpec, related_name='+', null=False, blank=False)
