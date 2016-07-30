@@ -1,0 +1,544 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2016-07-30 05:09+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: arcanelab/ouroboros/exceptions.py:390
+msgid "This field must be null."
+msgstr "This field must be null."
+
+#: arcanelab/ouroboros/exceptions.py:392
+msgid "This field cannot be null."
+msgstr "This field cannot be null."
+
+#: arcanelab/ouroboros/exceptions.py:394
+msgid "This field must be blank."
+msgstr "This field must be blank."
+
+#: arcanelab/ouroboros/exceptions.py:396
+msgid "This field cannot be blank."
+msgstr "This field cannot be blank."
+
+#: arcanelab/ouroboros/executors.py:245
+msgid "No course exists in the workflow spec with such code"
+msgstr "No course exists in the workflow spec with such code"
+
+#: arcanelab/ouroboros/executors.py:439
+msgid "Course does not have children"
+msgstr "Course does not have children"
+
+#: arcanelab/ouroboros/executors.py:451
+msgid "Child course does not exist"
+msgstr "Child course does not exist"
+
+#: arcanelab/ouroboros/executors.py:453
+msgid "Multiple children courses exist with course code in path"
+msgstr "Multiple children courses exist with course code in path"
+
+#: arcanelab/ouroboros/executors.py:581
+msgid "This course is not joinable"
+msgstr "This course is not joinable"
+
+#: arcanelab/ouroboros/executors.py:662
+msgid "No condition was satisfied when traversing a multiplexer node"
+msgstr "No condition was satisfied when traversing a multiplexer node"
+
+#: arcanelab/ouroboros/executors.py:707
+msgid ""
+"The joiner callable returned None -not deciding any action- but all the "
+"branches have terminated"
+msgstr ""
+"The joiner callable returned None -not deciding any action- but all the "
+"branches have terminated"
+
+#: arcanelab/ouroboros/executors.py:720
+msgid "Split node transitions must all have a unique action name"
+msgstr "Split node transitions must all have a unique action name"
+
+#: arcanelab/ouroboros/executors.py:738
+msgid "Invalid joiner resolution code type. Expected string or None"
+msgstr "Invalid joiner resolution code type. Expected string or None"
+
+#: arcanelab/ouroboros/executors.py:769
+msgid "No workflow instance exists for given document"
+msgstr "No workflow instance exists for given document"
+
+#: arcanelab/ouroboros/executors.py:819
+msgid ""
+"The specified course instance cannot be started because it is not pending"
+msgstr ""
+"The specified course instance cannot be started because it is not pending"
+
+#: arcanelab/ouroboros/executors.py:848
+msgid "Input node transitions must all have a unique action name"
+msgstr "Input node transitions must all have a unique action name"
+
+#: arcanelab/ouroboros/executors.py:861
+msgid ""
+"No action can be executed in the specified course instance because it is not "
+"waiting for an action to be taken"
+msgstr ""
+"No action can be executed in the specified course instance because it is not "
+"waiting for an action to be taken"
+
+#: arcanelab/ouroboros/executors.py:877
+msgid "Cannot cancel this instance because it is already terminated"
+msgstr "Cannot cancel this instance because it is already terminated"
+
+#: arcanelab/ouroboros/models.py:14
+msgid "The `document_type` field must reference a subclass of Document"
+msgstr "The `document_type` field must reference a subclass of Document"
+
+#: arcanelab/ouroboros/models.py:38
+msgid "Document Type"
+msgstr "Document Type"
+
+#: arcanelab/ouroboros/models.py:39
+msgid "Accepted related document class"
+msgstr "Accepted related document class"
+
+#: arcanelab/ouroboros/models.py:40 arcanelab/ouroboros/models.py:139
+#: arcanelab/ouroboros/models.py:245
+msgid "Code"
+msgstr "Code"
+
+#: arcanelab/ouroboros/models.py:41 arcanelab/ouroboros/models.py:140
+#: arcanelab/ouroboros/models.py:246
+msgid "Internal (unique) code"
+msgstr "Internal (unique) code"
+
+#: arcanelab/ouroboros/models.py:42 arcanelab/ouroboros/models.py:141
+#: arcanelab/ouroboros/models.py:247 arcanelab/ouroboros/models.py:436
+msgid "Name"
+msgstr "Name"
+
+#: arcanelab/ouroboros/models.py:43 arcanelab/ouroboros/models.py:142
+#: arcanelab/ouroboros/models.py:248 arcanelab/ouroboros/models.py:437
+msgid "Description"
+msgstr "Description"
+
+#: arcanelab/ouroboros/models.py:44
+msgid "Create Permission"
+msgstr "Create Permission"
+
+#: arcanelab/ouroboros/models.py:45
+msgid ""
+"Permission code (as <application>.<permission>) to test against when a "
+"workflow instance is created. The user who intends to create a workflow "
+"instance must satisfy this permission against the associated document."
+msgstr ""
+"Permission code (as <application>.<permission>) to test against when a "
+"workflow instance is created. The user who intends to create a workflow "
+"instance must satisfy this permission against the associated document."
+
+#: arcanelab/ouroboros/models.py:49 arcanelab/ouroboros/models.py:143
+#: arcanelab/ouroboros/models.py:272
+msgid "Cancel Permission"
+msgstr "Cancel Permission"
+
+#: arcanelab/ouroboros/models.py:50
+msgid ""
+"Permission code (as <application>.<permission>) to test against when a "
+"course instance is cancelled. The user who intends to cancel a course "
+"instance in this workflow must satisfy this permission against the "
+"associated document."
+msgstr ""
+"Permission code (as <application>.<permission>) to test against when a "
+"course instance is cancelled. The user who intends to cancel a course "
+"instance in this workflow must satisfy this permission against the "
+"associated document."
+
+#: arcanelab/ouroboros/models.py:68
+msgid "No main course is defined for the workflow (expected one)"
+msgstr "No main course is defined for the workflow (expected one)"
+
+#: arcanelab/ouroboros/models.py:71
+msgid "Multiple main courses are defined for the workflow (expected one)"
+msgstr "Multiple main courses are defined for the workflow (expected one)"
+
+#: arcanelab/ouroboros/models.py:108
+msgid "This workflow has at least one circular dependent course"
+msgstr "This workflow has at least one circular dependent course"
+
+#: arcanelab/ouroboros/models.py:121 arcanelab/ouroboros/models.py:137
+msgid "Workflow Spec"
+msgstr "Workflow Spec"
+
+#: arcanelab/ouroboros/models.py:122
+msgid "Workflow Specs"
+msgstr "Workflow Specs"
+
+#: arcanelab/ouroboros/models.py:138
+msgid "Workflow spec this course spec belongs to"
+msgstr "Workflow spec this course spec belongs to"
+
+#: arcanelab/ouroboros/models.py:144
+msgid ""
+"Permission code (as <application>.<permission>) to test against when this "
+"course instance is cancelled. The user who intends to cancel this course "
+"instance must satisfy this permission against the associated document."
+msgstr ""
+"Permission code (as <application>.<permission>) to test against when this "
+"course instance is cancelled. The user who intends to cancel this course "
+"instance must satisfy this permission against the associated document."
+
+#: arcanelab/ouroboros/models.py:162
+msgid "A workflow course is expected to have exactly one cancel node"
+msgstr "A workflow course is expected to have exactly one cancel node"
+
+#: arcanelab/ouroboros/models.py:168
+msgid ""
+"A non-root workflow course is expected to have one joined node when "
+"having at least one calling split with a joiner callable"
+msgstr ""
+"A non-root workflow course is expected to have one joined node when "
+"having at least one calling split with a joiner callable"
+
+#: arcanelab/ouroboros/models.py:173
+msgid "A workflow course is expected to have exactly one enter node"
+msgstr "A workflow course is expected to have exactly one enter node"
+
+#: arcanelab/ouroboros/models.py:180
+msgid "A workflow course is expected to have at least one exit node"
+msgstr "A workflow course is expected to have at least one exit node"
+
+#: arcanelab/ouroboros/models.py:191
+msgid ""
+"A child workflow course is expected to have only SPLIT type calling nodes"
+msgstr ""
+"A child workflow course is expected to have only SPLIT type calling nodes"
+
+#: arcanelab/ouroboros/models.py:208
+msgid "A course should have an empty code if, and only if, it is the root"
+msgstr "A course should have an empty code if, and only if, it is the root"
+
+#: arcanelab/ouroboros/models.py:211 arcanelab/ouroboros/models.py:243
+msgid "Course Spec"
+msgstr "Course Spec"
+
+#: arcanelab/ouroboros/models.py:212
+msgid "Course Specs"
+msgstr "Course Specs"
+
+#: arcanelab/ouroboros/models.py:231
+msgid "Enter"
+msgstr "Enter"
+
+#: arcanelab/ouroboros/models.py:232
+msgid "Exit"
+msgstr "Exit"
+
+#: arcanelab/ouroboros/models.py:233
+msgid "Cancel"
+msgstr "Cancel"
+
+#: arcanelab/ouroboros/models.py:234
+msgid "Joined"
+msgstr "Joined"
+
+#: arcanelab/ouroboros/models.py:235
+msgid "Input"
+msgstr "Input"
+
+#: arcanelab/ouroboros/models.py:236
+msgid "Step"
+msgstr "Step"
+
+#: arcanelab/ouroboros/models.py:237
+msgid "Multiplexer"
+msgstr "Multiplexer"
+
+#: arcanelab/ouroboros/models.py:238
+msgid "Split"
+msgstr "Split"
+
+#: arcanelab/ouroboros/models.py:241
+msgid "Type"
+msgstr "Type"
+
+#: arcanelab/ouroboros/models.py:241
+msgid "Node type"
+msgstr "Node type"
+
+#: arcanelab/ouroboros/models.py:244
+msgid "Course spec this node spec belongs to"
+msgstr "Course spec this node spec belongs to"
+
+#: arcanelab/ouroboros/models.py:249
+msgid "Landing Handler"
+msgstr "Landing Handler"
+
+#: arcanelab/ouroboros/models.py:250
+msgid ""
+"A callable that will triggered when this node is reached. The expected "
+"signature is (document, user) since no interaction is expected to exist with "
+"the workflow instance, but the handlers should perform actions in the "
+"document"
+msgstr ""
+"A callable that will triggered when this node is reached. The expected "
+"signature is (document, user) since no interaction is expected to exist with "
+"the workflow instance, but the handlers should perform actions in the "
+"document"
+
+#: arcanelab/ouroboros/models.py:256
+msgid "Exit Value"
+msgstr "Exit Value"
+
+#: arcanelab/ouroboros/models.py:257
+msgid "Exit value. Expected only for exit nodes"
+msgstr "Exit value. Expected only for exit nodes"
+
+#: arcanelab/ouroboros/models.py:259
+msgid "Joiner"
+msgstr "Joiner"
+
+#: arcanelab/ouroboros/models.py:260
+msgid ""
+"A callable that will be triggered every time a split's branch reaches an "
+"end. The split's branch will trigger this callable which must return a valid "
+"transition name (existing action as outbound in this node) to leave the "
+"split and take an action, or None to remain in the split and wait for other "
+"branches (an exception will be raised if None is returned but no branch is "
+"still to finish). Its contract is (document, statuses, last) being the "
+"associated document, a dictionary of branch codes and their exit values "
+"(None: running; -1: cancelled or joined,>= 0: terminated by exit node), and "
+"the code of the branch being joined (such code will be present in the "
+"dictionary)"
+msgstr ""
+"A callable that will be triggered every time a split's branch reaches an "
+"end. The split's branch will trigger this callable which must return a valid "
+"transition name (existing action as outbound in this node) to leave the "
+"split and take an action, or None to remain in the split and wait for other "
+"branches (an exception will be raised if None is returned but no branch is "
+"still to finish). Its contract is (document, statuses, last) being the "
+"associated document, a dictionary of branch codes and their exit values "
+"(None: running; -1: cancelled or joined,>= 0: terminated by exit node), and "
+"the code of the branch being joined (such code will be present in the "
+"dictionary)"
+
+#: arcanelab/ouroboros/models.py:273
+msgid ""
+"Permission code (as <application>.<permission>) to test against when an "
+"action on this node is executed. The user who intends to execute the action "
+"in this node must satisfy this permission against the associated document"
+msgstr ""
+"Permission code (as <application>.<permission>) to test against when an "
+"action on this node is executed. The user who intends to execute the action "
+"in this node must satisfy this permission against the associated document"
+
+#: arcanelab/ouroboros/models.py:277
+msgid "Branches"
+msgstr "Branches"
+
+#: arcanelab/ouroboros/models.py:278
+msgid "Courses this node branches to. Expected only for split nodes"
+msgstr "Courses this node branches to. Expected only for split nodes"
+
+#: arcanelab/ouroboros/models.py:281
+msgid "This node must not have inbounds"
+msgstr "This node must not have inbounds"
+
+#: arcanelab/ouroboros/models.py:285
+msgid "This node must not have outbounds"
+msgstr "This node must not have outbounds"
+
+#: arcanelab/ouroboros/models.py:289
+msgid "This node must have inbounds"
+msgstr "This node must have inbounds"
+
+#: arcanelab/ouroboros/models.py:293
+msgid "This node must have outbounds"
+msgstr "This node must have outbounds"
+
+#: arcanelab/ouroboros/models.py:300 arcanelab/ouroboros/models.py:302
+msgid "This node must have exactly one outbound"
+msgstr "This node must have exactly one outbound"
+
+#: arcanelab/ouroboros/models.py:307 arcanelab/ouroboros/models.py:309
+msgid "This node must have more than one outbound"
+msgstr "This node must have more than one outbound"
+
+#: arcanelab/ouroboros/models.py:314
+msgid "This node must have at least two branches"
+msgstr "This node must have at least two branches"
+
+#: arcanelab/ouroboros/models.py:317
+msgid "Split nodes must branch to courses in the same workflow"
+msgstr "Split nodes must branch to courses in the same workflow"
+
+#: arcanelab/ouroboros/models.py:322
+msgid ""
+"Split nodes with one outbound must have no joiner, while split nodes with "
+"many outbounds must have joiner"
+msgstr ""
+"Split nodes with one outbound must have no joiner, while split nodes with "
+"many outbounds must have joiner"
+
+#: arcanelab/ouroboros/models.py:327
+msgid "This node must have no branches"
+msgstr "This node must have no branches"
+
+#: arcanelab/ouroboros/models.py:407
+msgid "Node"
+msgstr "Node"
+
+#: arcanelab/ouroboros/models.py:408
+msgid "Nodes"
+msgstr "Nodes"
+
+#: arcanelab/ouroboros/models.py:414
+msgid "Origin node cannot be of type \"exit\", \"joined\" or \"cancel\""
+msgstr "Origin node cannot be of type \"exit\", \"joined\" or \"cancel\""
+
+#: arcanelab/ouroboros/models.py:419
+msgid "Destination node cannot be of type \"enter\", \"joined\" or \"cancel\""
+msgstr "Destination node cannot be of type \"enter\", \"joined\" or \"cancel\""
+
+#: arcanelab/ouroboros/models.py:428
+msgid "Origin"
+msgstr "Origin"
+
+#: arcanelab/ouroboros/models.py:428
+msgid "Origin node"
+msgstr "Origin node"
+
+#: arcanelab/ouroboros/models.py:431
+msgid "Destination"
+msgstr "Destination"
+
+#: arcanelab/ouroboros/models.py:431
+msgid "Destination node"
+msgstr "Destination node"
+
+#: arcanelab/ouroboros/models.py:433
+msgid "Action Name"
+msgstr "Action Name"
+
+#: arcanelab/ouroboros/models.py:434
+msgid ""
+"Action name for this transition. Unique with respect to the origin node. "
+"Expected only for split and input nodes"
+msgstr ""
+"Action name for this transition. Unique with respect to the origin node. "
+"Expected only for split and input nodes"
+
+#: arcanelab/ouroboros/models.py:439
+msgid "Permission"
+msgstr "Permission"
+
+#: arcanelab/ouroboros/models.py:440
+msgid ""
+"Permission code (as <application>.<permission>) to test against. It is not "
+"required, but only allowed if coming from an input node"
+msgstr ""
+"Permission code (as <application>.<permission>) to test against. It is not "
+"required, but only allowed if coming from an input node"
+
+#: arcanelab/ouroboros/models.py:443
+msgid "Condition"
+msgstr "Condition"
+
+#: arcanelab/ouroboros/models.py:444
+msgid ""
+"A callable evaluating the condition. Expected only for multiplexer nodes. "
+"The condition will evaluate with signature (document, user) and will return "
+"a value that will be treated as boolean."
+msgstr ""
+"A callable evaluating the condition. Expected only for multiplexer nodes. "
+"The condition will evaluate with signature (document, user) and will return "
+"a value that will be treated as boolean."
+
+#: arcanelab/ouroboros/models.py:448
+msgid "Priority"
+msgstr "Priority"
+
+#: arcanelab/ouroboros/models.py:449
+msgid ""
+"A priority value used to order evaluation of condition. Expected only for "
+"multiplexer nodes"
+msgstr ""
+"A priority value used to order evaluation of condition. Expected only for "
+"multiplexer nodes"
+
+#: arcanelab/ouroboros/models.py:454
+msgid "Connected nodes by a transition must belong to the same course"
+msgstr "Connected nodes by a transition must belong to the same course"
+
+#: arcanelab/ouroboros/models.py:460 arcanelab/ouroboros/models.py:466
+msgid "This field must be unique among transitions in multiplexer nodes."
+msgstr "This field must be unique among transitions in multiplexer nodes."
+
+#: arcanelab/ouroboros/models.py:527
+msgid "Transition Spec"
+msgstr "Transition Spec"
+
+#: arcanelab/ouroboros/models.py:528
+msgid "Transition Specs"
+msgstr "Transition Specs"
+
+#: arcanelab/ouroboros/models.py:548
+#, python-format
+msgid ""
+"Workflow instances must reference documents with expected class in their "
+"workflow. Current: %(current)s. Expected: %(expected)s"
+msgstr ""
+"Workflow instances must reference documents with expected class in their "
+"workflow. Current: %(current)s. Expected: %(expected)s"
+
+#: arcanelab/ouroboros/models.py:560
+msgid "No main course is present for the workflow instance (expected one)"
+msgstr "No main course is present for the workflow instance (expected one)"
+
+#: arcanelab/ouroboros/models.py:563
+msgid ""
+"Multiple main courses are present for the workflow instance (expected one)"
+msgstr ""
+"Multiple main courses are present for the workflow instance (expected one)"
+
+#: arcanelab/ouroboros/models.py:577
+msgid "Workflow Instance"
+msgstr "Workflow Instance"
+
+#: arcanelab/ouroboros/models.py:578
+msgid "Workflow Instances"
+msgstr "Workflow Instances"
+
+#: arcanelab/ouroboros/models.py:597
+msgid "Referenced course and instance do not refer the same workflow"
+msgstr "Referenced course and instance do not refer the same workflow"
+
+#: arcanelab/ouroboros/models.py:600
+msgid "Referenced course and parent node instance's course are not the same"
+msgstr "Referenced course and parent node instance's course are not the same"
+
+#: arcanelab/ouroboros/models.py:628
+msgid "Referenced node and course instance do not refer the same course"
+msgstr "Referenced node and course instance do not refer the same course"
+
+#: arcanelab/ouroboros/models.py:641
+msgid ""
+"This split node does not have children biunivocally referencing the branches "
+"in the split node spec"
+msgstr ""
+"This split node does not have children biunivocally referencing the branches "
+"in the split node spec"
+
+#: arcanelab/ouroboros/models.py:647
+msgid ""
+"This node instance is not a split node. It must not instantiate any branch"
+msgstr ""
+"This node instance is not a split node. It must not instantiate any branch"

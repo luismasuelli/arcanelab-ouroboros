@@ -165,9 +165,9 @@ class CourseSpec(models.Model):
     def verify_has_joined_node(self):
         if self.callers.exclude(joiner__isnull=True).exists():
             return
-        return self._verify_has_node_of_type(NodeSpec.CANCEL, _('A non-root workflow course is expected to have at '
-                                                                'least one joined node when having at least one '
-                                                                'calling split with a joiner callable'))
+        return self._verify_has_node_of_type(NodeSpec.CANCEL, _('A non-root workflow course is expected to have '
+                                                                'one joined node when having at least one calling '
+                                                                'split with a joiner callable'))
 
     def verify_has_enter_node(self):
         return self._verify_has_node_of_type(NodeSpec.ENTER, _('A workflow course is expected to have exactly one '
@@ -416,7 +416,7 @@ def valid_origin_types(obj):
 
 def valid_destination_types(obj):
     if obj and obj.type not in (NodeSpec.ENTER, NodeSpec.CANCEL, NodeSpec.JOINED):
-        raise ValidationError(_('Origin node cannot be of type "enter", "joined" or "cancel"'))
+        raise ValidationError(_('Destination node cannot be of type "enter", "joined" or "cancel"'))
 
 
 class TransitionSpec(models.Model):
@@ -451,7 +451,7 @@ class TransitionSpec(models.Model):
 
     def verify_consistency(self):
         exceptions.ensure(lambda obj: obj.origin.course_spec == obj.destination.course_spec, self,
-                          _('Connected nodes for a transition must belong to the same course'),
+                          _('Connected nodes by a transition must belong to the same course'),
                           exceptions.WorkflowCourseTransitionInconsistent)
 
     def verify_unique_priority(self):

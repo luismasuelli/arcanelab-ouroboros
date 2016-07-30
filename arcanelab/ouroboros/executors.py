@@ -448,7 +448,7 @@ class Workflow(object):
                 try:
                     return cls.find_course(course_instance.node.branches.get(course__code=head), tail)
                 except models.NodeInstance.DoesNotExist:
-                    raise exceptions.WorkflowNoSuchElement(course_instance, _('Children course does not exist'), head)
+                    raise exceptions.WorkflowNoSuchElement(course_instance, _('Child course does not exist'), head)
                 except models.NodeInstance.MultipleObjectsReturned:
                     raise exceptions.WorkflowNoSuchElement(course_instance, _('Multiple children courses exist '
                                                                               'with course code in path'), head)
