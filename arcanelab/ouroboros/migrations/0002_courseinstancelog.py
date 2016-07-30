@@ -9,7 +9,7 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('flowkeeper', '0001_initial'),
+        ('ouroboros', '0001_initial'),
     ]
 
     operations = [
@@ -18,8 +18,8 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('created_on', models.DateTimeField(auto_now_add=True)),
-                ('course_instance', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='logs', to='flowkeeper.CourseInstance')),
-                ('node_spec', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='+', to='flowkeeper.NodeSpec')),
+                ('course_instance', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='logs', to='ouroboros.CourseInstance')),
+                ('node_spec', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='+', to='ouroboros.NodeSpec')),
             ],
         ),
     ]

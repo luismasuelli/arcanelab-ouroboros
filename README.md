@@ -1,2 +1,2 @@
-# django-flowkeeper-ritual
+# arcanelab-ouroboros
 Workflow library for django

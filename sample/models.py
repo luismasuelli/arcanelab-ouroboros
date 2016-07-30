@@ -1,7 +1,7 @@
 from django.db import models
 from permission.logics import PermissionLogic
 from permission import add_permission_logic
-from grimoire.django.flowkeeper.models import Document
+from arcanelab.ouroboros.models import Document
 from django.conf import settings
 
 
