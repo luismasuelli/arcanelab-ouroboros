@@ -546,9 +546,10 @@ class WorkflowInstance(TrackedLive):
             if self.content_type != self.workflow.document_type:
                 raise exceptions.WorkflowInstanceDoesNotAcceptDocument(
                     self, _('Workflow instances must reference documents with expected class in their workflow. '
-                            'Current: %s. Expected: %s') % (
-                        self.content_type.model_class().__name__, self.workflow.document_type.model_class().__name__
-                    ))
+                            'Current: %(current)s. Expected: %(expected)s') % {
+                        'current': self.content_type.model_class().__name__,
+                        'expected': self.workflow.document_type.model_class().__name__
+                    })
         except ObjectDoesNotExist:
             pass
 
