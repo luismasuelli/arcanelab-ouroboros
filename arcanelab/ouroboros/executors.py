@@ -6,6 +6,7 @@
 
 from __future__ import unicode_literals
 from contextlib import contextmanager
+from django.apps import apps as registry
 from django.core.exceptions import ValidationError
 from django.db.transaction import atomic
 from django.utils.translation import ugettext_lazy as _
@@ -132,12 +133,11 @@ class Workflow(object):
             return Workflow.create(user, self, document)
 
         @classmethod
-        def install(cls, spec_data, model):
+        def install(cls, spec_data):
             """
-            Takes a json specification (either as string or python dict) and the model to associate,
+            Takes a json specification (either as string or python dict) which includes the model to associate,
               and tries to create a new workflow spec.
             :param spec_data: The data used to install the spec. Either json or a dict.
-            :param model: The model to associate the spec with.
             :return: The new spec, wrapped by this class.
             """
 
@@ -145,7 +145,8 @@ class Workflow(object):
                 spec_data = json.loads(spec_data)
             if not isinstance(spec_data, dict):
                 raise TypeError('Spec data to install must be a valid json evaluating as a dict, or a dict itself')
-            if not issubclass(model, models.Document) or model is models.Document or model._meta.abstract:
+            model = registry.get_model(spec_data['model'])
+            if not issubclass(model, models.Document) or model._meta.abstract:
                 raise TypeError('Model to associate must be a strict concrete descendant class of Document')
 
             with atomic():
