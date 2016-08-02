@@ -180,7 +180,7 @@ class WorkflowModelFieldMustNotBeBlank(WorkflowStandardInvalidState):
 
 
 class WorkflowSpecHasNoMainCourse(WorkflowStandardInvalidState):
-    CODE = 'workflow-spec::no-main-course'
+    CODE = 'workflow-spec:no-main-course'
 
 
 class WorkflowSpecHasMultipleMainCourses(WorkflowStandardInvalidState):

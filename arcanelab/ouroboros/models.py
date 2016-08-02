@@ -10,8 +10,15 @@ from . import exceptions, fields
 
 
 def valid_document_type(value):
-    if value and not issubclass(value.model_class(), Document):
-        raise ValidationError(_('The `document_type` field must reference a subclass of Document'))
+    if value:
+        poop = False
+        try:
+            if not issubclass(ContentType.objects.get(pk=value).model_class(), Document):
+                poop = True
+        except ContentType.DoesNotExist:
+            poop = True
+        if poop:
+            raise ValidationError(_('The `document_type` field must reference a subclass of Document'))
 
 
 class Document(models.Model):
