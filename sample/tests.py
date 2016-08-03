@@ -103,8 +103,128 @@ class WorkflowSpecTestCase(TestCase):
         except Exception as e:
             self.assertFalse(True, 'An exception was raised (%s): %s' % (type(e).__name__, e))
 
-    def test_multiple_main_courses_is_bad(self):
-        self.assertTrue(True, 'not yet implemented')
-
     def test_cyclical_course_dependencies_is_bad(self):
-        self.assertTrue(True, 'not yet implemented')
+        with self.assertRaises(exceptions.WorkflowInvalidState) as ar:
+            Workflow.Spec.install({'model': 'sample.Task',
+                                   'code': 'empty-wfspec',
+                                   'name': 'Empty Workflow Spec',
+                                   'description': 'This empty workflow spec shall not pass',
+                                   'create_permission': '',
+                                   'cancel_permission': '',
+                                   'courses': [{
+                                       'code': '',
+                                       'name': 'Root',
+                                       'description': 'The root course',
+                                       'nodes': [{
+                                           'type': NodeSpec.ENTER,
+                                           'code': 'origin',
+                                           'name': 'Origin',
+                                           'description': 'The origin node'
+                                       }, {
+                                           'type': NodeSpec.SPLIT,
+                                           'code': 'parallel-1',
+                                           'name': 'Parallel',
+                                           'description': 'Parallel brancher',
+                                           'branches': ['foo', 'bar']
+                                       }, {
+                                           'type': NodeSpec.EXIT,
+                                           'code': 'exit',
+                                           'name': 'Exit',
+                                           'description': 'The only exit node',
+                                           'exit_value': 100,
+                                       }, {
+                                           'type': NodeSpec.CANCEL,
+                                           'code': 'cancel',
+                                           'name': 'Cancel',
+                                           'description': 'The cancel node',
+                                       }],
+                                       'transitions': [{
+                                           'origin': 'origin',
+                                           'destination': 'parallel-1',
+                                           'name': 'Initial transition',
+                                           'description': 'The initial transition',
+                                           'permission': 'sample.start_task',
+                                       }, {
+                                           'origin': 'parallel-1',
+                                           'destination': 'exit',
+                                           'name': 'Final transition',
+                                           'description': 'The final transition',
+                                       }]
+                                   }, {
+                                       'code': 'foo',
+                                       'name': 'Foo',
+                                       'description': 'Foo branch',
+                                       'nodes': [{
+                                           'type': NodeSpec.ENTER,
+                                           'code': 'origin',
+                                           'name': 'Origin',
+                                           'description': 'The origin node'
+                                       }, {
+                                           'type': NodeSpec.EXIT,
+                                           'code': 'exit',
+                                           'name': 'Exit',
+                                           'description': 'The only exit node',
+                                           'exit_value': 100,
+                                       }, {
+                                           'type': NodeSpec.CANCEL,
+                                           'code': 'cancel',
+                                           'name': 'Cancel',
+                                           'description': 'The cancel node',
+                                       }],
+                                       'transitions': [{
+                                           'origin': 'origin',
+                                           'destination': 'exit',
+                                           'name': 'Initial transition',
+                                           'description': 'The initial and only transition',
+                                           'permission': 'sample.start_task',
+                                       }]
+                                   }, {
+                                       'code': 'bar',
+                                       'name': 'Bar',
+                                       'description': 'Bar branch',
+                                       'nodes': [{
+                                           'type': NodeSpec.ENTER,
+                                           'code': 'origin',
+                                           'name': 'Origin',
+                                           'description': 'The origin node'
+                                       }, {
+                                           'type': NodeSpec.SPLIT,
+                                           'code': 'bad-parallel',
+                                           'name': 'Bad-Parallel',
+                                           'description': 'Bad parallel brancher',
+                                           'branches': ['foo', 'bar']
+                                       }, {
+                                           'type': NodeSpec.EXIT,
+                                           'code': 'exit',
+                                           'name': 'Exit',
+                                           'description': 'The only exit node',
+                                           'exit_value': 100,
+                                       }, {
+                                           'type': NodeSpec.CANCEL,
+                                           'code': 'cancel',
+                                           'name': 'Cancel',
+                                           'description': 'The cancel node',
+                                       }],
+                                       'transitions': [{
+                                           'origin': 'origin',
+                                           'destination': 'bad-parallel',
+                                           'name': 'Initial transition',
+                                           'description': 'The initial transition',
+                                           'permission': 'sample.start_task',
+                                       }, {
+                                           'origin': 'bad-parallel',
+                                           'destination': 'exit',
+                                           'name': 'Final transition',
+                                           'description': 'The final transition',
+                                       }]
+                                   }]})
+        ed_items = ar.exception.error_dict
+        self.assertEqual(len(ed_items), 1, 'The raised ValidationError produces an invalid count of errors (expected 1)')
+        self.assertIn('__all__', ed_items, 'The raised ValidationError produces errors for other fields than __all__')
+        self.assertIsInstance(ed_items['__all__'], list, 'The raised ValidationError has a non-list object in __all__')
+        self.assertEqual(len(ed_items['__all__']), 1, 'The raised ValidationError has more than one error in __all__')
+        self.assertIsInstance(ed_items['__all__'][0], ValidationError, 'The raised ValidationError has a non-list '
+                                                                       'object in __all__')
+        self.assertEqual(ed_items['__all__'][0].code, exceptions.WorkflowSpecHasCircularDependentCourses.CODE,
+                         'Invalid subclass of ValidationError raised')
+

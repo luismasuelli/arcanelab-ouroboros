@@ -237,7 +237,7 @@ class Workflow(object):
                     install_course(course_spec_data)
 
                 # Link the branches
-                for node_spec, branches in branches_map:
+                for node_spec, branches in items(branches_map):
                     for branch in branches:
                         try:
                             node_spec.branches.add(workflow_spec.course_specs.get(code=branch))
