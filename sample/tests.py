@@ -1,6 +1,7 @@
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 from arcanelab.ouroboros.executors import Workflow
+from arcanelab.ouroboros.models import NodeSpec
 from arcanelab.ouroboros import exceptions
 
 """
@@ -56,13 +57,51 @@ class WorkflowSpecTestCase(TestCase):
         self.assertIn('__all__', ed_items, 'The raised ValidationError produces errors for other fields than __all__')
         self.assertIsInstance(ed_items['__all__'], list, 'The raised ValidationError has a non-list object in __all__')
         self.assertEqual(len(ed_items['__all__']), 1, 'The raised ValidationError has more than one error in __all__')
+        self.assertIsInstance(ed_items['__all__'][0], ValidationError, 'The raised ValidationError has a non-list '
+                                                                       'object in __all__')
         self.assertEqual(ed_items['__all__'][0].code, exceptions.WorkflowSpecHasNoMainCourse.CODE,
                          'Invalid subclass of ValidationError raised')
 
-    # TODO these ones and below
-
     def test_single_main_course_is_good(self):
-        self.assertTrue(True, 'not yet implemented')
+        try:
+            Workflow.Spec.install({'model': 'sample.Task',
+                                   'code': 'empty-wfspec',
+                                   'name': 'Empty Workflow Spec',
+                                   'description': 'This empty workflow spec shall not pass',
+                                   'create_permission': '',
+                                   'cancel_permission': '',
+                                   'courses': [{
+                                       'code': '',
+                                       'name': 'Single',
+                                       'description': 'The only defined course',
+                                       'nodes': [{
+                                           'type': NodeSpec.ENTER,
+                                           'code': 'origin',
+                                           'name': 'Origin',
+                                           'description': 'The origin node'
+                                       }, {
+                                           'type': NodeSpec.EXIT,
+                                           'code': 'exit',
+                                           'name': 'Exit',
+                                           'description': 'The only exit node',
+                                           'exit_value': 100,
+                                       }, {
+                                           'type': NodeSpec.CANCEL,
+                                           'code': 'cancel',
+                                           'name': 'Cancel',
+                                           'description': 'The cancel node',
+                                       }],
+                                       'transitions': [{
+                                           'origin': 'origin',
+                                           'destination': 'exit',
+                                           'name': 'Initial transition',
+                                           'description': 'The initial and only transition',
+                                           'permission': 'sample.start_task',
+                                       }]
+                                   }]})
+            self.assertTrue(True)
+        except Exception as e:
+            self.assertFalse(True, 'An exception was raised (%s): %s' % (type(e).__name__, e))
 
     def test_multiple_main_courses_is_bad(self):
         self.assertTrue(True, 'not yet implemented')

@@ -417,13 +417,19 @@ class NodeSpec(models.Model):
 
 
 def valid_origin_types(obj):
-    if obj and obj.type not in (NodeSpec.EXIT, NodeSpec.CANCEL, NodeSpec.JOINED):
-        raise ValidationError(_('Origin node cannot be of type "exit", "joined" or "cancel"'))
+    try:
+        if obj and NodeSpec.objects.get(pk=obj).type in (NodeSpec.EXIT, NodeSpec.CANCEL, NodeSpec.JOINED):
+            raise ValidationError(_('Origin node cannot be of type "exit", "joined" or "cancel"'))
+    except NodeSpec.DoesNotExist:
+        pass
 
 
 def valid_destination_types(obj):
-    if obj and obj.type not in (NodeSpec.ENTER, NodeSpec.CANCEL, NodeSpec.JOINED):
-        raise ValidationError(_('Destination node cannot be of type "enter", "joined" or "cancel"'))
+    try:
+        if obj and NodeSpec.objects.get(pk=obj).type in (NodeSpec.ENTER, NodeSpec.CANCEL, NodeSpec.JOINED):
+            raise ValidationError(_('Destination node cannot be of type "enter", "joined" or "cancel"'))
+    except NodeSpec.DoesNotExist:
+        pass
 
 
 class TransitionSpec(models.Model):
