@@ -700,3 +700,9 @@ class CourseSpecTestCase(ValidationErrorWrappingTestCase):
         """
 
         WorkflowSpec.objects.all().delete()
+
+# TODO node-spec, transition-spec
+
+# TODO check on instances
+
+# TODO check on runs
