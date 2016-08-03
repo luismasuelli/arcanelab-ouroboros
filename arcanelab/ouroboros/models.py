@@ -9,6 +9,10 @@ from grimoire.django.tracked.models import TrackedLive
 from . import exceptions, fields
 
 
+# TODO perhaps make the description fields non-mandatory? If so, alter the 0001 migration as well
+#   since this pkg is not yet released.
+
+
 def valid_document_type(value):
     if value:
         poop = False
