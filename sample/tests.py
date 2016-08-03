@@ -400,4 +400,30 @@ class CourseSpecTestCase(ValidationErrorWrappingTestCase):
                          'Invalid subclass of ValidationError raised')
 
     def test_no_exit_node_is_bad(self):
-        pass
+        with self.assertRaises(exceptions.WorkflowInvalidState) as ar:
+            Workflow.Spec.install({'model': 'sample.Task',
+                                   'code': 'wfspec',
+                                   'name': 'Workflow Spec',
+                                   'description': 'This workflow spec shall not pass',
+                                   'create_permission': '',
+                                   'cancel_permission': '',
+                                   'courses': [{
+                                       'code': '',
+                                       'name': 'Single',
+                                       'description': 'The only defined course',
+                                       'nodes': [{
+                                           'type': NodeSpec.ENTER,
+                                           'code': 'origin',
+                                           'name': 'Origin',
+                                           'description': 'The origin node'
+                                       }, {
+                                           'type': NodeSpec.CANCEL,
+                                           'code': 'cancel',
+                                           'name': 'Cancel',
+                                           'description': 'The cancel node',
+                                       }],
+                                       'transitions': []
+                                   }]})
+        exc = self.unwrapValidationError(ar.exception)
+        self.assertEqual(exc.code, exceptions.WorkflowCourseSpecHasNoRequiredNode.CODE,
+                         'Invalid subclass of ValidationError raised')
