@@ -170,9 +170,9 @@ class CourseSpec(models.Model):
                                                                 'cancel node'))
 
     def verify_has_joined_node(self):
-        if self.callers.exclude(joiner__isnull=True).exists():
+        if not self.callers.exclude(joiner__isnull=True).exists():
             return
-        return self._verify_has_node_of_type(NodeSpec.CANCEL, _('A non-root workflow course is expected to have '
+        return self._verify_has_node_of_type(NodeSpec.JOINED, _('A non-root workflow course is expected to have '
                                                                 'one joined node when having at least one calling '
                                                                 'split with a joiner callable'))
 
@@ -320,7 +320,7 @@ class NodeSpec(models.Model):
     def verify_node_has_many_branches(self):
         exceptions.ensure(lambda obj: obj.branches.count() > 1, self, _('This node must have at least two branches'))
         try:
-            if self.branches.exclude(workflow_spec=self.course_spec.workflow).exists():
+            if self.branches.exclude(workflow_spec=self.course_spec.workflow_spec).exists():
                 raise exceptions.WorkflowCourseNodeInconsistentBranches(self, _('Split nodes must branch to courses in '
                                                                                 'the same workflow'))
         except CourseSpec.DoesNotExist:
@@ -556,12 +556,12 @@ class WorkflowInstance(TrackedLive):
 
     def verify_accepts_document(self):
         try:
-            if self.content_type != self.workflow.document_type:
+            if self.content_type != self.workflow_spec.document_type:
                 raise exceptions.WorkflowInstanceDoesNotAcceptDocument(
                     self, _('Workflow instances must reference documents with expected class in their workflow. '
                             'Current: %(current)s. Expected: %(expected)s') % {
                         'current': self.content_type.model_class().__name__,
-                        'expected': self.workflow.document_type.model_class().__name__
+                        'expected': self.workflow_spec.document_type.model_class().__name__
                     })
         except ObjectDoesNotExist:
             pass

@@ -152,6 +152,7 @@ class WorkflowSpecTestCase(ValidationErrorWrappingTestCase):
                                            'permission': 'sample.start_task',
                                        }, {
                                            'origin': 'parallel-1',
+                                           'action_name': 'escape',
                                            'destination': 'exit',
                                            'name': 'Final transition',
                                            'description': 'The final transition',
@@ -219,6 +220,7 @@ class WorkflowSpecTestCase(ValidationErrorWrappingTestCase):
                                            'permission': 'sample.start_task',
                                        }, {
                                            'origin': 'bad-parallel',
+                                           'action_name': 'escape',
                                            'destination': 'exit',
                                            'name': 'Final transition',
                                            'description': 'The final transition',
@@ -423,6 +425,128 @@ class CourseSpecTestCase(ValidationErrorWrappingTestCase):
                                            'description': 'The cancel node',
                                        }],
                                        'transitions': []
+                                   }]})
+        exc = self.unwrapValidationError(ar.exception)
+        self.assertEqual(exc.code, exceptions.WorkflowCourseSpecHasNoRequiredNode.CODE,
+                         'Invalid subclass of ValidationError raised')
+
+    def test_no_joined_node_when_caller_uses_joiner_is_bad(self):
+        with self.assertRaises(exceptions.WorkflowInvalidState) as ar:
+            Workflow.Spec.install({'model': 'sample.Task',
+                                   'code': 'wfspec',
+                                   'name': 'Workflow Spec',
+                                   'description': 'This workflow spec shall not pass',
+                                   'create_permission': '',
+                                   'cancel_permission': '',
+                                   'courses': [{
+                                       'code': '',
+                                       'name': 'Root',
+                                       'description': 'The root course',
+                                       'nodes': [{
+                                           'type': NodeSpec.ENTER,
+                                           'code': 'origin',
+                                           'name': 'Origin',
+                                           'description': 'The origin node'
+                                       }, {
+                                           'type': NodeSpec.SPLIT,
+                                           'code': 'parallel-1',
+                                           'name': 'Parallel',
+                                           'joiner': 'sample.support.dummy_joiner',
+                                           'description': 'Parallel brancher',
+                                           'branches': ['foo', 'bar']
+                                       }, {
+                                           'type': NodeSpec.EXIT,
+                                           'code': 'exit',
+                                           'name': 'Exit',
+                                           'description': 'One exit node',
+                                           'exit_value': 100,
+                                       }, {
+                                           'type': NodeSpec.EXIT,
+                                           'code': 'exit-2',
+                                           'name': 'Exit 2',
+                                           'description': 'Another exit node',
+                                           'exit_value': 100,
+                                       }, {
+                                           'type': NodeSpec.CANCEL,
+                                           'code': 'cancel',
+                                           'name': 'Cancel',
+                                           'description': 'The cancel node',
+                                       }],
+                                       'transitions': [{
+                                           'origin': 'origin',
+                                           'destination': 'parallel-1',
+                                           'name': 'Initial transition',
+                                           'description': 'The initial transition',
+                                           'permission': 'sample.start_task',
+                                       }, {
+                                           'origin': 'parallel-1',
+                                           'action_name': 'escape-1',
+                                           'destination': 'exit',
+                                           'name': 'Final transition 1',
+                                           'description': 'The final transition to exit 1',
+                                       }, {
+                                           'origin': 'parallel-1',
+                                           'action_name': 'escape-2',
+                                           'destination': 'exit-2',
+                                           'name': 'Final transition 2',
+                                           'description': 'The final transition to exit 2',
+                                       }]
+                                   }, {
+                                       'code': 'foo',
+                                       'name': 'Foo',
+                                       'description': 'Foo branch',
+                                       'nodes': [{
+                                           'type': NodeSpec.ENTER,
+                                           'code': 'origin',
+                                           'name': 'Origin',
+                                           'description': 'The origin node'
+                                       }, {
+                                           'type': NodeSpec.EXIT,
+                                           'code': 'exit',
+                                           'name': 'Exit',
+                                           'description': 'The only exit node',
+                                           'exit_value': 100,
+                                       }, {
+                                           'type': NodeSpec.CANCEL,
+                                           'code': 'cancel',
+                                           'name': 'Cancel',
+                                           'description': 'The cancel node',
+                                       }],
+                                       'transitions': [{
+                                           'origin': 'origin',
+                                           'destination': 'exit',
+                                           'name': 'Initial transition',
+                                           'description': 'The initial and only transition',
+                                           'permission': 'sample.start_task',
+                                       }]
+                                   }, {
+                                       'code': 'bar',
+                                       'name': 'Bar',
+                                       'description': 'Bar branch',
+                                       'nodes': [{
+                                           'type': NodeSpec.ENTER,
+                                           'code': 'origin',
+                                           'name': 'Origin',
+                                           'description': 'The origin node'
+                                       }, {
+                                           'type': NodeSpec.EXIT,
+                                           'code': 'exit',
+                                           'name': 'Exit',
+                                           'description': 'The only exit node',
+                                           'exit_value': 100,
+                                       }, {
+                                           'type': NodeSpec.CANCEL,
+                                           'code': 'cancel',
+                                           'name': 'Cancel',
+                                           'description': 'The cancel node',
+                                       }],
+                                       'transitions': [{
+                                           'origin': 'origin',
+                                           'destination': 'exit',
+                                           'name': 'Initial transition',
+                                           'description': 'The initial transition',
+                                           'permission': 'sample.start_task',
+                                       }]
                                    }]})
         exc = self.unwrapValidationError(ar.exception)
         self.assertEqual(exc.code, exceptions.WorkflowCourseSpecHasNoRequiredNode.CODE,
