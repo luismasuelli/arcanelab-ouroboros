@@ -152,7 +152,7 @@ class Workflow(object):
             with atomic():
                 code = spec_data.get('code')
                 name = spec_data.get('name')
-                description = spec_data.get('description')
+                description = spec_data.get('description', '')
                 create_permission = spec_data.get('create_permission')
                 cancel_permission = spec_data.get('cancel_permission')
                 workflow_spec = models.WorkflowSpec(code=code, name=name, description=description,
@@ -169,7 +169,7 @@ class Workflow(object):
                 def install_course(course_spec_data):
                     code = course_spec_data.get('code')
                     name = course_spec_data.get('name')
-                    description = course_spec_data.get('description')
+                    description = course_spec_data.get('description', '')
                     cancel_permission = course_spec_data.get('cancel_permission')
                     node_specs_data = course_spec_data.get('nodes') or []
                     transitions_specs_data = course_spec_data.get('transitions') or []
@@ -186,7 +186,7 @@ class Workflow(object):
                         type_ = node_spec_data.get('type')
                         code = node_spec_data.get('code')
                         name = node_spec_data.get('name')
-                        description = node_spec_data.get('description')
+                        description = node_spec_data.get('description', '')
                         landing_handler = node_spec_data.get('landing_handler')
                         exit_value = node_spec_data.get('exit_value')
                         joiner = node_spec_data.get('joiner')
@@ -209,7 +209,7 @@ class Workflow(object):
                         destination_code = transition_spec_data.get('destination')
                         action_name = transition_spec_data.get('action_name')
                         name = transition_spec_data.get('name')
-                        description = transition_spec_data.get('description')
+                        description = transition_spec_data.get('description', '')
                         permission = transition_spec_data.get('permission')
                         condition = transition_spec_data.get('condition')
                         priority = transition_spec_data.get('priority')
