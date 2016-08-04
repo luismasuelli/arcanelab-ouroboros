@@ -139,309 +139,167 @@ class CourseSpecTestCase(ValidationErrorWrappingTestCase):
 
     def test_no_cancel_node_is_bad(self):
         with self.assertRaises(exceptions.WorkflowInvalidState) as ar:
-            Workflow.Spec.install({'model': 'sample.Task',
-                                   'code': 'wfspec',
-                                   'name': 'Workflow Spec',
-                                   'description': 'This workflow spec shall not pass',
-                                   'create_permission': '',
-                                   'cancel_permission': '',
-                                   'courses': [{
-                                       'code': '',
-                                       'name': 'Single',
-                                       'description': 'The only defined course',
-                                       'nodes': [{
-                                           'type': NodeSpec.ENTER,
-                                           'code': 'origin',
-                                           'name': 'Origin',
-                                           'description': 'The origin node'
-                                       }, {
-                                           'type': NodeSpec.EXIT,
-                                           'code': 'exit',
-                                           'name': 'Exit',
-                                           'description': 'The only exit node',
-                                           'exit_value': 100,
-                                       }],
-                                       'transitions': [{
-                                           'origin': 'origin',
-                                           'destination': 'exit',
-                                           'name': 'Initial transition',
-                                           'description': 'The initial and only transition',
-                                           'permission': 'sample.start_task',
-                                       }]
-                                   }]})
+            spec = {'model': 'sample.Task', 'code': 'wfspec', 'name': 'Workflow Spec', 'create_permission': '',
+                    'cancel_permission': '',
+                    'courses': [{
+                        'code': '', 'name': 'Single',
+                        'nodes': [{
+                            'type': NodeSpec.ENTER, 'code': 'origin', 'name': 'Origin',
+                        }, {
+                            'type': NodeSpec.EXIT, 'code': 'exit', 'name': 'Exit', 'exit_value': 100,
+                        }],
+                        'transitions': [{
+                            'origin': 'origin', 'destination': 'exit', 'name': 'Initial transition',
+                            'permission': 'sample.start_task',
+                        }]
+                    }]}
+            Workflow.Spec.install(spec)
         exc = self.unwrapValidationError(ar.exception)
         self.assertEqual(exc.code, exceptions.WorkflowCourseSpecHasNoRequiredNode.CODE,
                          'Invalid subclass of ValidationError raised')
 
     def test_multi_cancel_node_is_bad(self):
         with self.assertRaises(exceptions.WorkflowInvalidState) as ar:
-            Workflow.Spec.install({'model': 'sample.Task',
-                                   'code': 'wfspec',
-                                   'name': 'Workflow Spec',
-                                   'description': 'This workflow spec shall not pass',
-                                   'create_permission': '',
-                                   'cancel_permission': '',
-                                   'courses': [{
-                                       'code': '',
-                                       'name': 'Single',
-                                       'description': 'The only defined course',
-                                       'nodes': [{
-                                           'type': NodeSpec.ENTER,
-                                           'code': 'origin',
-                                           'name': 'Origin',
-                                           'description': 'The origin node'
-                                       }, {
-                                           'type': NodeSpec.EXIT,
-                                           'code': 'exit',
-                                           'name': 'Exit',
-                                           'description': 'The only exit node',
-                                           'exit_value': 100,
-                                       }, {
-                                           'type': NodeSpec.CANCEL,
-                                           'code': 'cancel',
-                                           'name': 'Cancel',
-                                           'description': 'The cancel node',
-                                       }, {
-                                           'type': NodeSpec.CANCEL,
-                                           'code': 'cancel-2',
-                                           'name': 'Cancel 2',
-                                           'description': 'Another cancel node',
-                                       }],
-                                       'transitions': [{
-                                           'origin': 'origin',
-                                           'destination': 'exit',
-                                           'name': 'Initial transition',
-                                           'description': 'The initial and only transition',
-                                           'permission': 'sample.start_task',
-                                       }]
-                                   }]})
+            spec = {'model': 'sample.Task', 'code': 'wfspec', 'name': 'Workflow Spec', 'create_permission': '',
+                    'cancel_permission': '',
+                    'courses': [{
+                        'code': '', 'name': 'Single',
+                        'nodes': [{
+                            'type': NodeSpec.ENTER, 'code': 'origin', 'name': 'Origin',
+                        }, {
+                            'type': NodeSpec.EXIT, 'code': 'exit', 'name': 'Exit', 'exit_value': 100,
+                        }, {
+                            'type': NodeSpec.CANCEL, 'code': 'cancel', 'name': 'Cancel',
+                        }, {
+                            'type': NodeSpec.CANCEL, 'code': 'cancel-2', 'name': 'Cancel 2',
+                        }],
+                        'transitions': [{
+                            'origin': 'origin', 'destination': 'exit', 'name': 'Initial transition',
+                            'permission': 'sample.start_task',
+                        }]
+                    }]}
+            Workflow.Spec.install(spec)
         exc = self.unwrapValidationError(ar.exception)
         self.assertEqual(exc.code, exceptions.WorkflowCourseSpecMultipleRequiredNodes.CODE,
                          'Invalid subclass of ValidationError raised')
 
     def test_no_enter_node_is_bad(self):
         with self.assertRaises(exceptions.WorkflowInvalidState) as ar:
-            Workflow.Spec.install({'model': 'sample.Task',
-                                   'code': 'wfspec',
-                                   'name': 'Workflow Spec',
-                                   'description': 'This workflow spec shall not pass',
-                                   'create_permission': '',
-                                   'cancel_permission': '',
-                                   'courses': [{
-                                       'code': '',
-                                       'name': 'Single',
-                                       'description': 'The only defined course',
-                                       'nodes': [{
-                                           'type': NodeSpec.EXIT,
-                                           'code': 'exit',
-                                           'name': 'Exit',
-                                           'description': 'The only exit node',
-                                           'exit_value': 100,
-                                       }, {
-                                           'type': NodeSpec.CANCEL,
-                                           'code': 'cancel',
-                                           'name': 'Cancel',
-                                           'description': 'The cancel node',
-                                       }],
-                                       'transitions': []
-                                   }]})
+            spec = {'model': 'sample.Task', 'code': 'wfspec', 'name': 'Workflow Spec', 'create_permission': '',
+                    'cancel_permission': '',
+                    'courses': [{
+                        'code': '', 'name': 'Single',
+                        'nodes': [{
+                            'type': NodeSpec.EXIT, 'code': 'exit', 'name': 'Exit', 'exit_value': 100,
+                        }, {
+                            'type': NodeSpec.CANCEL, 'code': 'cancel', 'name': 'Cancel',
+                        }],
+                        'transitions': []
+                    }]}
+            Workflow.Spec.install(spec)
         exc = self.unwrapValidationError(ar.exception)
         self.assertEqual(exc.code, exceptions.WorkflowCourseSpecHasNoRequiredNode.CODE,
                          'Invalid subclass of ValidationError raised')
 
     def test_multi_enter_node_is_bad(self):
         with self.assertRaises(exceptions.WorkflowInvalidState) as ar:
-            Workflow.Spec.install({'model': 'sample.Task',
-                                   'code': 'wfspec',
-                                   'name': 'Workflow Spec',
-                                   'description': 'This workflow spec shall not pass',
-                                   'create_permission': '',
-                                   'cancel_permission': '',
-                                   'courses': [{
-                                       'code': '',
-                                       'name': 'Single',
-                                       'description': 'The only defined course',
-                                       'nodes': [{
-                                           'type': NodeSpec.ENTER,
-                                           'code': 'origin',
-                                           'name': 'Origin',
-                                           'description': 'The origin node'
-                                       }, {
-                                           'type': NodeSpec.ENTER,
-                                           'code': 'origin-2',
-                                           'name': 'Origin-2',
-                                           'description': 'Another origin node'
-                                       }, {
-                                           'type': NodeSpec.EXIT,
-                                           'code': 'exit',
-                                           'name': 'Exit',
-                                           'description': 'The only exit node',
-                                           'exit_value': 100,
-                                       }, {
-                                           'type': NodeSpec.CANCEL,
-                                           'code': 'cancel',
-                                           'name': 'Cancel',
-                                           'description': 'The cancel node',
-                                       }],
-                                       'transitions': [{
-                                           'origin': 'origin',
-                                           'destination': 'exit',
-                                           'name': 'Initial transition',
-                                           'description': 'The initial and only transition',
-                                           'permission': 'sample.start_task',
-                                       }]
-                                   }]})
+            spec = {'model': 'sample.Task', 'code': 'wfspec', 'name': 'Workflow Spec', 'create_permission': '',
+                    'cancel_permission': '',
+                    'courses': [{
+                        'code': '', 'name': 'Single',
+                        'nodes': [{
+                            'type': NodeSpec.ENTER, 'code': 'origin', 'name': 'Origin',
+                        }, {
+                            'type': NodeSpec.ENTER, 'code': 'origin-2', 'name': 'Origin-2',
+                        }, {
+                            'type': NodeSpec.EXIT, 'code': 'exit', 'name': 'Exit', 'exit_value': 100,
+                        }, {
+                            'type': NodeSpec.CANCEL, 'code': 'cancel', 'name': 'Cancel',
+                        }],
+                        'transitions': [{
+                            'origin': 'origin', 'destination': 'exit', 'name': 'Initial transition',
+                            'permission': 'sample.start_task',
+                        }]
+                    }]}
+            Workflow.Spec.install(spec)
         exc = self.unwrapValidationError(ar.exception)
         self.assertEqual(exc.code, exceptions.WorkflowCourseSpecMultipleRequiredNodes.CODE,
                          'Invalid subclass of ValidationError raised')
 
     def test_no_exit_node_is_bad(self):
         with self.assertRaises(exceptions.WorkflowInvalidState) as ar:
-            Workflow.Spec.install({'model': 'sample.Task',
-                                   'code': 'wfspec',
-                                   'name': 'Workflow Spec',
-                                   'description': 'This workflow spec shall not pass',
-                                   'create_permission': '',
-                                   'cancel_permission': '',
-                                   'courses': [{
-                                       'code': '',
-                                       'name': 'Single',
-                                       'description': 'The only defined course',
-                                       'nodes': [{
-                                           'type': NodeSpec.ENTER,
-                                           'code': 'origin',
-                                           'name': 'Origin',
-                                           'description': 'The origin node'
-                                       }, {
-                                           'type': NodeSpec.CANCEL,
-                                           'code': 'cancel',
-                                           'name': 'Cancel',
-                                           'description': 'The cancel node',
-                                       }],
-                                       'transitions': []
-                                   }]})
+            spec = {'model': 'sample.Task', 'code': 'wfspec', 'name': 'Workflow Spec', 'create_permission': '',
+                    'cancel_permission': '',
+                    'courses': [{
+                        'code': '', 'name': 'Single',
+                        'nodes': [{
+                            'type': NodeSpec.ENTER, 'code': 'origin', 'name': 'Origin',
+                        }, {
+                            'type': NodeSpec.CANCEL, 'code': 'cancel', 'name': 'Cancel',
+                        }],
+                        'transitions': []
+                    }]}
+            Workflow.Spec.install(spec)
         exc = self.unwrapValidationError(ar.exception)
         self.assertEqual(exc.code, exceptions.WorkflowCourseSpecHasNoRequiredNode.CODE,
                          'Invalid subclass of ValidationError raised')
 
     def test_no_joined_node_when_caller_uses_joiner_is_bad(self):
         with self.assertRaises(exceptions.WorkflowInvalidState) as ar:
-            Workflow.Spec.install({'model': 'sample.Task',
-                                   'code': 'wfspec',
-                                   'name': 'Workflow Spec',
-                                   'description': 'This workflow spec shall not pass',
-                                   'create_permission': '',
-                                   'cancel_permission': '',
-                                   'courses': [{
-                                       'code': '',
-                                       'name': 'Root',
-                                       'description': 'The root course',
-                                       'nodes': [{
-                                           'type': NodeSpec.ENTER,
-                                           'code': 'origin',
-                                           'name': 'Origin',
-                                           'description': 'The origin node'
-                                       }, {
-                                           'type': NodeSpec.SPLIT,
-                                           'code': 'parallel-1',
-                                           'name': 'Parallel',
-                                           'joiner': 'sample.support.dummy_joiner',
-                                           'description': 'Parallel brancher',
-                                           'branches': ['foo', 'bar']
-                                       }, {
-                                           'type': NodeSpec.EXIT,
-                                           'code': 'exit',
-                                           'name': 'Exit',
-                                           'description': 'One exit node',
-                                           'exit_value': 100,
-                                       }, {
-                                           'type': NodeSpec.EXIT,
-                                           'code': 'exit-2',
-                                           'name': 'Exit 2',
-                                           'description': 'Another exit node',
-                                           'exit_value': 100,
-                                       }, {
-                                           'type': NodeSpec.CANCEL,
-                                           'code': 'cancel',
-                                           'name': 'Cancel',
-                                           'description': 'The cancel node',
-                                       }],
-                                       'transitions': [{
-                                           'origin': 'origin',
-                                           'destination': 'parallel-1',
-                                           'name': 'Initial transition',
-                                           'description': 'The initial transition',
-                                           'permission': 'sample.start_task',
-                                       }, {
-                                           'origin': 'parallel-1',
-                                           'action_name': 'escape-1',
-                                           'destination': 'exit',
-                                           'name': 'Final transition 1',
-                                           'description': 'The final transition to exit 1',
-                                       }, {
-                                           'origin': 'parallel-1',
-                                           'action_name': 'escape-2',
-                                           'destination': 'exit-2',
-                                           'name': 'Final transition 2',
-                                           'description': 'The final transition to exit 2',
-                                       }]
-                                   }, {
-                                       'code': 'foo',
-                                       'name': 'Foo',
-                                       'description': 'Foo branch',
-                                       'nodes': [{
-                                           'type': NodeSpec.ENTER,
-                                           'code': 'origin',
-                                           'name': 'Origin',
-                                           'description': 'The origin node'
-                                       }, {
-                                           'type': NodeSpec.EXIT,
-                                           'code': 'exit',
-                                           'name': 'Exit',
-                                           'description': 'The only exit node',
-                                           'exit_value': 100,
-                                       }, {
-                                           'type': NodeSpec.CANCEL,
-                                           'code': 'cancel',
-                                           'name': 'Cancel',
-                                           'description': 'The cancel node',
-                                       }],
-                                       'transitions': [{
-                                           'origin': 'origin',
-                                           'destination': 'exit',
-                                           'name': 'Initial transition',
-                                           'description': 'The initial and only transition',
-                                           'permission': 'sample.start_task',
-                                       }]
-                                   }, {
-                                       'code': 'bar',
-                                       'name': 'Bar',
-                                       'description': 'Bar branch',
-                                       'nodes': [{
-                                           'type': NodeSpec.ENTER,
-                                           'code': 'origin',
-                                           'name': 'Origin',
-                                           'description': 'The origin node'
-                                       }, {
-                                           'type': NodeSpec.EXIT,
-                                           'code': 'exit',
-                                           'name': 'Exit',
-                                           'description': 'The only exit node',
-                                           'exit_value': 100,
-                                       }, {
-                                           'type': NodeSpec.CANCEL,
-                                           'code': 'cancel',
-                                           'name': 'Cancel',
-                                           'description': 'The cancel node',
-                                       }],
-                                       'transitions': [{
-                                           'origin': 'origin',
-                                           'destination': 'exit',
-                                           'name': 'Initial transition',
-                                           'description': 'The initial transition',
-                                           'permission': 'sample.start_task',
-                                       }]
-                                   }]})
+            spec = {'model': 'sample.Task', 'code': 'wfspec', 'name': 'Workflow Spec', 'create_permission': '',
+                    'cancel_permission': '',
+                    'courses': [{
+                        'code': '', 'name': 'Root',
+                        'nodes': [{
+                            'type': NodeSpec.ENTER, 'code': 'origin', 'name': 'Origin',
+                        }, {
+                            'type': NodeSpec.SPLIT, 'code': 'parallel-1', 'name': 'Parallel',
+                            'joiner': 'sample.support.dummy_joiner', 'branches': ['foo', 'bar']
+                        }, {
+                            'type': NodeSpec.EXIT, 'code': 'exit', 'name': 'Exit', 'exit_value': 100,
+                        }, {
+                            'type': NodeSpec.EXIT, 'code': 'exit-2', 'name': 'Exit 2', 'exit_value': 100,
+                        }, {
+                            'type': NodeSpec.CANCEL, 'code': 'cancel', 'name': 'Cancel',
+                        }],
+                        'transitions': [{
+                            'origin': 'origin', 'destination': 'parallel-1', 'name': 'Initial transition',
+                            'permission': 'sample.start_task',
+                        }, {
+                            'origin': 'parallel-1', 'action_name': 'escape-1', 'destination': 'exit',
+                            'name': 'Final transition 1',
+                        }, {
+                            'origin': 'parallel-1', 'action_name': 'escape-2', 'destination': 'exit-2',
+                            'name': 'Final transition 2',
+                        }]
+                    }, {
+                        'code': 'foo', 'name': 'Foo',
+                        'nodes': [{
+                            'type': NodeSpec.ENTER, 'code': 'origin', 'name': 'Origin',
+                        }, {
+                            'type': NodeSpec.EXIT, 'code': 'exit', 'name': 'Exit', 'exit_value': 100,
+                        }, {
+                            'type': NodeSpec.CANCEL, 'code': 'cancel', 'name': 'Cancel',
+                        }],
+                        'transitions': [{
+                            'origin': 'origin', 'destination': 'exit', 'name': 'Initial transition',
+                            'permission': 'sample.start_task',
+                        }]
+                    }, {
+                        'code': 'bar', 'name': 'Bar',
+                        'nodes': [{
+                            'type': NodeSpec.ENTER, 'code': 'origin', 'name': 'Origin',
+                        }, {
+                            'type': NodeSpec.EXIT, 'code': 'exit', 'name': 'Exit', 'exit_value': 100,
+                        }, {
+                            'type': NodeSpec.CANCEL, 'code': 'cancel', 'name': 'Cancel',
+                        }],
+                        'transitions': [{
+                            'origin': 'origin', 'destination': 'exit', 'name': 'Initial transition',
+                            'permission': 'sample.start_task',
+                        }]
+                    }]}
+            Workflow.Spec.install(spec)
         exc = self.unwrapValidationError(ar.exception)
         self.assertEqual(exc.code, exceptions.WorkflowCourseSpecHasNoRequiredNode.CODE,
                          'Invalid subclass of ValidationError raised')
