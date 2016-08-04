@@ -1,8 +1,8 @@
 from django.core.exceptions import ValidationError
-from django.test import TestCase
 from arcanelab.ouroboros.executors import Workflow
 from arcanelab.ouroboros.models import NodeSpec, WorkflowSpec, CourseSpec
 from arcanelab.ouroboros import exceptions
+from .support import ValidationErrorWrappingTestCase
 
 """
 Involved tests here:
@@ -17,18 +17,6 @@ Involved tests here:
 
     ... add more cases.
 """
-
-class ValidationErrorWrappingTestCase(TestCase):
-
-    def unwrapValidationError(self, exception, field='__all__'):
-        ed_items = exception.error_dict
-        self.assertEqual(len(ed_items), 1, 'The raised ValidationError produces an invalid count of errors (expected 1)')
-        self.assertIn(field, ed_items, 'The raised ValidationError produces errors for other fields than %s' % field)
-        self.assertIsInstance(ed_items[field], list, 'The raised ValidationError has a non-list object in %s' % field)
-        self.assertEqual(len(ed_items[field]), 1, 'The raised ValidationError has more than one error in %s' % field)
-        self.assertIsInstance(ed_items[field][0], ValidationError, 'The raised ValidationError has a non-list object in'
-                                                                   ' %s' % field)
-        return ed_items[field][0]
 
 ############################################
 # WorkflowSpec tests
