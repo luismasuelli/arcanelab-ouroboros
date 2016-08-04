@@ -9,7 +9,6 @@ from grimoire.django.tracked.models import TrackedLive
 from . import exceptions, fields
 
 
-# TODO perhaps make the description fields non-mandatory? If so, alter the 0001 migration as well
 #   since this pkg is not yet released.
 
 
@@ -51,7 +50,7 @@ class WorkflowSpec(models.Model):
     code = models.SlugField(max_length=20, null=False, blank=False, unique=True, verbose_name=_('Code'),
                             help_text=_('Internal (unique) code'))
     name = models.CharField(max_length=60, null=False, blank=False, verbose_name=_('Name'))
-    description = models.TextField(max_length=1023, null=False, blank=False, verbose_name=_('Description'))
+    description = models.TextField(max_length=1023, null=False, blank=True, verbose_name=_('Description'))
     create_permission = models.CharField(max_length=201, blank=True, null=True, verbose_name=_('Create Permission'),
                                          help_text=_('Permission code (as <application>.<permission>) to test against '
                                                      'when a workflow instance is created. The user who intends to '
@@ -150,7 +149,7 @@ class CourseSpec(models.Model):
     code = models.SlugField(max_length=20, null=False, blank=True, verbose_name=_('Code'),
                             help_text=_('Internal (unique) code'))
     name = models.CharField(max_length=60, null=False, blank=False, verbose_name=_('Name'))
-    description = models.TextField(max_length=1023, null=False, blank=False, verbose_name=_('Description'))
+    description = models.TextField(max_length=1023, null=False, blank=True, verbose_name=_('Description'))
     cancel_permission = models.CharField(max_length=201, blank=True, null=True, verbose_name=_('Cancel Permission'),
                                          help_text=_('Permission code (as <application>.<permission>) to test against '
                                                      'when this course instance is cancelled. The user who intends to '
@@ -256,7 +255,7 @@ class NodeSpec(models.Model):
     code = models.SlugField(max_length=20, null=False, blank=False, verbose_name=_('Code'),
                             help_text=_('Internal (unique) code'))
     name = models.CharField(max_length=60, null=False, blank=False, verbose_name=_('Name'))
-    description = models.TextField(max_length=1023, null=False, blank=False, verbose_name=_('Description'))
+    description = models.TextField(max_length=1023, null=False, blank=True, verbose_name=_('Description'))
     landing_handler = fields.CallableReferenceField(blank=True, null=True, verbose_name=_('Landing Handler'),
                                                     help_text=_('A callable that will triggered when this node is '
                                                                 'reached. The expected signature is (document, user) '
@@ -451,7 +450,7 @@ class TransitionSpec(models.Model):
                                    help_text=_('Action name for this transition. Unique with respect to the origin '
                                                'node. Expected only for split and input nodes'))
     name = models.CharField(max_length=60, null=False, blank=False, verbose_name=_('Name'))
-    description = models.TextField(max_length=1023, null=False, blank=False, verbose_name=_('Description'))
+    description = models.TextField(max_length=1023, null=False, blank=True, verbose_name=_('Description'))
     # These fields are only allowed for input
     permission = models.CharField(max_length=201, blank=True, null=True, verbose_name=_('Permission'),
                                   help_text=_('Permission code (as <application>.<permission>) to test against. It is '
