@@ -4,20 +4,6 @@ from arcanelab.ouroboros.models import NodeSpec, WorkflowSpec, CourseSpec
 from arcanelab.ouroboros import exceptions
 from .support import ValidationErrorWrappingTestCase
 
-"""
-Involved tests here:
-
-    - Empty workflow (no courses) -> Must Explode: No Main.
-    - Workflow with single main course (enter, cancel, exit, enter->exit) -> Must Pass.
-    - Workflow with two main courses (enter, cancel, exit, enter->exit) -> Must Explode: Multiple Main.
-    - Workflow with a main course with two branches. Main course is
-      (enter, split, cancel, exit, enter->split, split->exit), while a branch
-      references a course like (enter, cancel, exit, enter->exit) and the other
-      references the main branch -> Must Explode: cyclical.
-
-    ... add more cases.
-"""
-
 ############################################
 # WorkflowSpec tests
 ############################################
@@ -688,9 +674,3 @@ class CourseSpecTestCase(ValidationErrorWrappingTestCase):
         """
 
         WorkflowSpec.objects.all().delete()
-
-# TODO node-spec, transition-spec
-
-# TODO check on instances
-
-# TODO check on runs
