@@ -200,8 +200,7 @@ class Workflow(object):
                         node_spec.save()
 
                         # Deferring branches installation
-                        if type_ == models.NodeSpec.SPLIT:
-                            branches_map[node_spec] = node_spec_data.get('branches') or []
+                        branches_map[node_spec] = node_spec_data.get('branches') or []
 
                     # Install the node transitions
                     for transition_spec_data in transitions_specs_data:

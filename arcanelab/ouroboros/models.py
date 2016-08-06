@@ -334,7 +334,8 @@ class NodeSpec(models.Model):
                                                                           'outbounds must have joiner'))
 
     def verify_node_has_no_branches(self):
-        exceptions.ensure(lambda obj: not obj.branches.exists(), self, _('This node must have no branches'))
+        exceptions.ensure(lambda obj: not obj.branches.exists(), self, _('This node must have no branches'),
+                          exceptions.WorkflowCourseNodeHasBranches)
 
     def verify_enter_node(self):
         self.verify_node_has_no_inbounds()
