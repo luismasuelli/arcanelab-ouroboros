@@ -40,7 +40,8 @@ class NodeSpecTestCase(ValidationErrorWrappingTestCase):
                         'transitions': [{
                             'origin': 'origin', 'destination': 'loop-1', 'name': 'Initial transition',
                         }, {
-                            'origin': 'loop-1', 'destination': 'exit', 'name': 'Final transition', 'action_name': 'break',
+                            'origin': 'loop-1', 'destination': 'exit', 'name': 'Final transition',
+                            'action_name': 'break',
                         }, {
                             'origin': 'loop-1', 'destination': 'loop-2', 'name': 'Loop', 'action_name': 'loop',
                         }, {
@@ -48,7 +49,9 @@ class NodeSpecTestCase(ValidationErrorWrappingTestCase):
                         }]
                     }]}
             installed = Workflow.Spec.install(spec)
-            trans = installed.spec.course_specs.get(code='').node_specs.get(code='loop-1').outbounds.get(action_name='loop')
+            trans = installed.spec.course_specs.get(code='').node_specs.get(code='loop-1').outbounds.get(
+                action_name='loop'
+            )
             trans.destination = installed.spec.course_specs.get(code='').node_specs.get(code='origin')
             trans.save()
             installed.spec.course_specs.get(code='').node_specs.get(code='origin').full_clean()
@@ -74,7 +77,8 @@ class NodeSpecTestCase(ValidationErrorWrappingTestCase):
                             'type': NodeSpec.CANCEL, 'code': 'cancel', 'name': 'Cancel',
                         }],
                         'transitions': [{
-                            'origin': 'loop-1', 'destination': 'exit', 'name': 'Initial transition', 'action_name': 'break',
+                            'origin': 'loop-1', 'destination': 'exit', 'name': 'Initial transition',
+                            'action_name': 'break',
                         }, {
                             'origin': 'loop-1', 'destination': 'loop-2', 'name': 'Loop', 'action_name': 'loop',
                         }, {
@@ -108,7 +112,8 @@ class NodeSpecTestCase(ValidationErrorWrappingTestCase):
                         }, {
                             'origin': 'origin', 'destination': 'loop-2', 'name': 'Initial transition 2',
                         }, {
-                            'origin': 'loop-1', 'destination': 'exit', 'name': 'Initial transition', 'action_name': 'break',
+                            'origin': 'loop-1', 'destination': 'exit', 'name': 'Initial transition',
+                            'action_name': 'break',
                         }, {
                             'origin': 'loop-1', 'destination': 'loop-2', 'name': 'Loop', 'action_name': 'loop',
                         }, {
@@ -121,16 +126,102 @@ class NodeSpecTestCase(ValidationErrorWrappingTestCase):
                          'Invalid subclass of ValidationError raised')
 
     def test_enter_node_with_exit_value_is_bad(self):
-        pass
+        with self.assertRaises(exceptions.WorkflowInvalidState) as ar:
+            spec = {'model': 'sample.Task', 'code': 'wfspec', 'name': 'Workflow Spec', 'create_permission': '',
+                    'cancel_permission': '',
+                    'courses': [{
+                        'code': '', 'name': 'Single',
+                        'nodes': [{
+                            'type': NodeSpec.ENTER, 'code': 'origin', 'name': 'Origin', 'exit_value': 101,
+                        }, {
+                            'type': NodeSpec.INPUT, 'code': 'loop-1', 'name': 'Loop-1',
+                        }, {
+                            'type': NodeSpec.INPUT, 'code': 'loop-2', 'name': 'Loop-2',
+                        }, {
+                            'type': NodeSpec.EXIT, 'code': 'exit', 'name': 'Exit', 'exit_value': 100,
+                        }, {
+                            'type': NodeSpec.CANCEL, 'code': 'cancel', 'name': 'Cancel',
+                        }],
+                        'transitions': [{
+                            'origin': 'origin', 'destination': 'loop-1', 'name': 'Initial transition 1',
+                        }, {
+                            'origin': 'loop-1', 'destination': 'exit', 'name': 'Initial transition',
+                            'action_name': 'break',
+                        }, {
+                            'origin': 'loop-1', 'destination': 'loop-2', 'name': 'Loop', 'action_name': 'loop',
+                        }, {
+                            'origin': 'loop-2', 'destination': 'loop-1', 'name': 'Loop', 'action_name': 'loop',
+                        }]
+                    }]}
+            Workflow.Spec.install(spec)
+        exc = self.unwrapValidationError(ar.exception, 'exit_value')
 
     def test_enter_node_with_joiner_is_bad(self):
-        pass
+        with self.assertRaises(exceptions.WorkflowInvalidState) as ar:
+            spec = {'model': 'sample.Task', 'code': 'wfspec', 'name': 'Workflow Spec', 'create_permission': '',
+                    'cancel_permission': '',
+                    'courses': [{
+                        'code': '', 'name': 'Single',
+                        'nodes': [{
+                            'type': NodeSpec.ENTER, 'code': 'origin', 'name': 'Origin', 'joiner':
+                            'sample.support.dummy_joiner',
+                        }, {
+                            'type': NodeSpec.INPUT, 'code': 'loop-1', 'name': 'Loop-1',
+                        }, {
+                            'type': NodeSpec.INPUT, 'code': 'loop-2', 'name': 'Loop-2',
+                        }, {
+                            'type': NodeSpec.EXIT, 'code': 'exit', 'name': 'Exit', 'exit_value': 100,
+                        }, {
+                            'type': NodeSpec.CANCEL, 'code': 'cancel', 'name': 'Cancel',
+                        }],
+                        'transitions': [{
+                            'origin': 'origin', 'destination': 'loop-1', 'name': 'Initial transition 1',
+                        }, {
+                            'origin': 'loop-1', 'destination': 'exit', 'name': 'Initial transition',
+                            'action_name': 'break',
+                        }, {
+                            'origin': 'loop-1', 'destination': 'loop-2', 'name': 'Loop', 'action_name': 'loop',
+                        }, {
+                            'origin': 'loop-2', 'destination': 'loop-1', 'name': 'Loop', 'action_name': 'loop',
+                        }]
+                    }]}
+            Workflow.Spec.install(spec)
+        exc = self.unwrapValidationError(ar.exception, 'joiner')
 
     def test_enter_node_with_branches_is_bad(self):
         pass
 
     def test_enter_node_with_execute_permission_is_bad(self):
-        pass
+        with self.assertRaises(exceptions.WorkflowInvalidState) as ar:
+            spec = {'model': 'sample.Task', 'code': 'wfspec', 'name': 'Workflow Spec', 'create_permission': '',
+                    'cancel_permission': '',
+                    'courses': [{
+                        'code': '', 'name': 'Single',
+                        'nodes': [{
+                            'type': NodeSpec.ENTER, 'code': 'origin', 'name': 'Origin',
+                            'execute_permission': 'sample.cancel_task',
+                        }, {
+                            'type': NodeSpec.INPUT, 'code': 'loop-1', 'name': 'Loop-1',
+                        }, {
+                            'type': NodeSpec.INPUT, 'code': 'loop-2', 'name': 'Loop-2',
+                        }, {
+                            'type': NodeSpec.EXIT, 'code': 'exit', 'name': 'Exit', 'exit_value': 101,
+                        }, {
+                            'type': NodeSpec.CANCEL, 'code': 'cancel', 'name': 'Cancel',
+                        }],
+                        'transitions': [{
+                            'origin': 'origin', 'destination': 'loop-1', 'name': 'Initial transition 1',
+                        }, {
+                            'origin': 'loop-1', 'destination': 'exit', 'name': 'Initial transition',
+                            'action_name': 'break',
+                        }, {
+                            'origin': 'loop-1', 'destination': 'loop-2', 'name': 'Loop', 'action_name': 'loop',
+                        }, {
+                            'origin': 'loop-2', 'destination': 'loop-1', 'name': 'Loop', 'action_name': 'loop',
+                        }]
+                    }]}
+            Workflow.Spec.install(spec)
+        exc = self.unwrapValidationError(ar.exception, 'execute_permission')
 
     # testing exit node
 
