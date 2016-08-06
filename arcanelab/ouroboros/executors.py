@@ -217,12 +217,12 @@ class Workflow(object):
                         try:
                             origin = course_spec.node_specs.get(code=origin_code)
                         except models.NodeSpec.DoesNotExist:
-                            raise exceptions.WorkflowCourseNodeTransitionDoesNotExist(course_spec, origin_code)
+                            raise exceptions.WorkflowCourseNodeDoesNotExist(course_spec, origin_code)
 
                         try:
                             destination = course_spec.node_specs.get(code=destination_code)
                         except models.NodeSpec.DoesNotExist:
-                            raise exceptions.WorkflowCourseNodeTransitionDoesNotExist(course_spec, destination_code)
+                            raise exceptions.WorkflowCourseNodeDoesNotExist(course_spec, destination_code)
 
                         transition = models.TransitionSpec(origin=origin, destination=destination, name=name,
                                                            action_name=action_name, description=description,
