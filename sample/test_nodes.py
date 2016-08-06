@@ -347,7 +347,7 @@ class NodeSpecTestCase(ValidationErrorWrappingTestCase):
                             'origin': 'loop-2', 'destination': 'loop-1', 'name': 'Loop', 'action_name': 'loop',
                         }]
                     }]}
-            installed = Workflow.Spec.install(spec)
+            Workflow.Spec.install(spec)
         exc = self.unwrapValidationError(ar.exception)
         self.assertEqual(exc.code, exceptions.WorkflowCourseNodeHasNoInbound.CODE,
                          'Invalid subclass of ValidationError raised')
@@ -867,7 +867,7 @@ class NodeSpecTestCase(ValidationErrorWrappingTestCase):
                             'origin': 'loop-2', 'destination': 'loop-1', 'name': 'Loop', 'action_name': 'loop',
                         }]
                     }]}
-            installed = Workflow.Spec.install(spec)
+            Workflow.Spec.install(spec)
         exc = self.unwrapValidationError(ar.exception)
         self.assertEqual(exc.code, exceptions.WorkflowCourseNodeHasNoInbound.CODE,
                          'Invalid subclass of ValidationError raised')
@@ -898,7 +898,7 @@ class NodeSpecTestCase(ValidationErrorWrappingTestCase):
                             'origin': 'loop-1', 'destination': 'loop-2', 'name': 'Loop', 'action_name': 'loop',
                         }]
                     }]}
-            installed = Workflow.Spec.install(spec)
+            Workflow.Spec.install(spec)
         exc = self.unwrapValidationError(ar.exception)
         self.assertEqual(exc.code, exceptions.WorkflowCourseNodeHasNoOutbound.CODE,
                          'Invalid subclass of ValidationError raised')
