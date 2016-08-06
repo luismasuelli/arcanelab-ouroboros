@@ -414,7 +414,36 @@ class NodeSpecTestCase(ValidationErrorWrappingTestCase):
                          'Invalid subclass of ValidationError raised')
 
     def test_exit_node_with_execute_permission_is_bad(self):
-        pass
+        with self.assertRaises(exceptions.WorkflowInvalidState) as ar:
+            spec = {'model': 'sample.Task', 'code': 'wfspec', 'name': 'Workflow Spec', 'create_permission': '',
+                    'cancel_permission': '',
+                    'courses': [{
+                        'code': '', 'name': 'Single',
+                        'nodes': [{
+                            'type': NodeSpec.ENTER, 'code': 'origin', 'name': 'Origin',
+                        }, {
+                            'type': NodeSpec.INPUT, 'code': 'loop-1', 'name': 'Loop-1',
+                        }, {
+                            'type': NodeSpec.INPUT, 'code': 'loop-2', 'name': 'Loop-2',
+                        }, {
+                            'type': NodeSpec.EXIT, 'code': 'exit', 'name': 'Exit', 'exit_value': 101,
+                            'execute_permission': 'sample.cancel_task',
+                        }, {
+                            'type': NodeSpec.CANCEL, 'code': 'cancel', 'name': 'Cancel',
+                        }],
+                        'transitions': [{
+                            'origin': 'origin', 'destination': 'loop-1', 'name': 'Initial transition 1',
+                        }, {
+                            'origin': 'loop-1', 'destination': 'exit', 'name': 'Initial transition',
+                            'action_name': 'break',
+                        }, {
+                            'origin': 'loop-1', 'destination': 'loop-2', 'name': 'Loop', 'action_name': 'loop',
+                        }, {
+                            'origin': 'loop-2', 'destination': 'loop-1', 'name': 'Loop', 'action_name': 'loop',
+                        }]
+                    }]}
+            Workflow.Spec.install(spec)
+        exc = self.unwrapValidationError(ar.exception, 'execute_permission')
 
     def test_exit_node_with_joiner_is_bad(self):
         pass
