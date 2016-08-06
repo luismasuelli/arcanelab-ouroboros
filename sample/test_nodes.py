@@ -842,10 +842,66 @@ class NodeSpecTestCase(ValidationErrorWrappingTestCase):
     # testing input node
 
     def test_input_node_with_no_inbounds_is_bad(self):
-        pass
+        with self.assertRaises(ValidationError) as ar:
+            spec = {'model': 'sample.Task', 'code': 'wfspec', 'name': 'Workflow Spec', 'create_permission': '',
+                    'cancel_permission': '',
+                    'courses': [{
+                        'code': '', 'name': 'Single',
+                        'nodes': [{
+                            'type': NodeSpec.ENTER, 'code': 'origin', 'name': 'Origin',
+                        }, {
+                            'type': NodeSpec.INPUT, 'code': 'loop-1', 'name': 'Loop-1',
+                        }, {
+                            'type': NodeSpec.INPUT, 'code': 'loop-2', 'name': 'Loop-2',
+                        }, {
+                            'type': NodeSpec.EXIT, 'code': 'exit', 'name': 'Exit', 'exit_value': 100,
+                        }, {
+                            'type': NodeSpec.CANCEL, 'code': 'cancel', 'name': 'Cancel',
+                        }],
+                        'transitions': [{
+                            'origin': 'origin', 'destination': 'loop-1', 'name': 'Initial transition',
+                        }, {
+                            'origin': 'loop-1', 'destination': 'exit', 'name': 'Final transition',
+                            'action_name': 'break',
+                        }, {
+                            'origin': 'loop-2', 'destination': 'loop-1', 'name': 'Loop', 'action_name': 'loop',
+                        }]
+                    }]}
+            installed = Workflow.Spec.install(spec)
+        exc = self.unwrapValidationError(ar.exception)
+        self.assertEqual(exc.code, exceptions.WorkflowCourseNodeHasNoInbound.CODE,
+                         'Invalid subclass of ValidationError raised')
 
     def test_input_node_with_no_outbounds_is_bad(self):
-        pass
+        with self.assertRaises(ValidationError) as ar:
+            spec = {'model': 'sample.Task', 'code': 'wfspec', 'name': 'Workflow Spec', 'create_permission': '',
+                    'cancel_permission': '',
+                    'courses': [{
+                        'code': '', 'name': 'Single',
+                        'nodes': [{
+                            'type': NodeSpec.ENTER, 'code': 'origin', 'name': 'Origin',
+                        }, {
+                            'type': NodeSpec.INPUT, 'code': 'loop-1', 'name': 'Loop-1',
+                        }, {
+                            'type': NodeSpec.INPUT, 'code': 'loop-2', 'name': 'Loop-2',
+                        }, {
+                            'type': NodeSpec.EXIT, 'code': 'exit', 'name': 'Exit', 'exit_value': 100,
+                        }, {
+                            'type': NodeSpec.CANCEL, 'code': 'cancel', 'name': 'Cancel',
+                        }],
+                        'transitions': [{
+                            'origin': 'origin', 'destination': 'loop-1', 'name': 'Initial transition',
+                        }, {
+                            'origin': 'loop-1', 'destination': 'exit', 'name': 'Final transition',
+                            'action_name': 'break',
+                        }, {
+                            'origin': 'loop-1', 'destination': 'loop-2', 'name': 'Loop', 'action_name': 'loop',
+                        }]
+                    }]}
+            installed = Workflow.Spec.install(spec)
+        exc = self.unwrapValidationError(ar.exception)
+        self.assertEqual(exc.code, exceptions.WorkflowCourseNodeHasNoOutbound.CODE,
+                         'Invalid subclass of ValidationError raised')
 
     def test_input_node_with_branches_is_bad(self):
         pass
