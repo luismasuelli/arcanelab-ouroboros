@@ -387,9 +387,8 @@ class NodeSpec(models.Model):
         self.verify_node_has_inbounds()
         self.verify_node_has_outbounds()
         self.verify_node_has_no_branches()
-        exceptions.ensure_field('exit_value', self, False, False)
+        exceptions.ensure_field('exit_value', self, True, True)
         exceptions.ensure_field('joiner', self, True, True)
-        exceptions.ensure_field('execute_permission', self)
 
     def clean(self):
         """
