@@ -1,11 +1,8 @@
 from django.core.exceptions import ValidationError
 from arcanelab.ouroboros.executors import Workflow
-from arcanelab.ouroboros.models import NodeSpec, WorkflowSpec, CourseSpec
+from arcanelab.ouroboros.models import NodeSpec
 from arcanelab.ouroboros import exceptions
 from .support import ValidationErrorWrappingTestCase
-
-
-# TODO transition-spec
 
 # TODO check on instances
 
@@ -2005,7 +2002,68 @@ class NodeSpecTestCase(ValidationErrorWrappingTestCase):
                          'Invalid subclass of ValidationError raised')
 
     def test_multiplexer_node_with_branches_is_bad(self):
-        pass
+        with self.assertRaises(exceptions.WorkflowInvalidState) as ar:
+            spec = {'model': 'sample.Task', 'code': 'wfspec', 'name': 'Workflow Spec', 'create_permission': '',
+                    'cancel_permission': '',
+                    'courses': [{
+                        'code': '', 'name': 'Single',
+                        'nodes': [{
+                            'type': NodeSpec.ENTER, 'code': 'origin', 'name': 'Origin'
+                        }, {
+                            'type': NodeSpec.SPLIT, 'code': 'split', 'name': 'Split',
+                            'branches': ['foo', 'bar'],
+                        }, {
+                            'type': NodeSpec.MULTIPLEXER, 'code': 'multiplexer', 'name': 'Decision',
+                            'branches': ['foo', 'bar'],
+                        }, {
+                            'type': NodeSpec.EXIT, 'code': 'exit-a', 'name': 'Exit A', 'exit_value': 100,
+                        }, {
+                            'type': NodeSpec.EXIT, 'code': 'exit-b', 'name': 'Exit B', 'exit_value': 101,
+                        }, {
+                            'type': NodeSpec.CANCEL, 'code': 'cancel', 'name': 'Cancel',
+                        }],
+                        'transitions': [{
+                            'origin': 'origin', 'destination': 'split', 'name': 'split transition',
+                        }, {
+                            'origin': 'split', 'destination': 'multiplexer', 'name': 'multiplexer transition',
+                        }, {
+                            'origin': 'multiplexer', 'destination': 'exit-a', 'name': 'Choice A',
+                            'priority': 0, 'condition': 'sample.support.dummy_condition_a'
+                        }, {
+                            'origin': 'multiplexer', 'destination': 'exit-b', 'name': 'Choice B',
+                            'priority': 1, 'condition': 'sample.support.dummy_condition_b'
+                        }]
+                    }, {
+                        'code': 'foo', 'name': 'Foo',
+                        'nodes': [{
+                            'type': NodeSpec.ENTER, 'code': 'origin', 'name': 'Origin',
+                        }, {
+                            'type': NodeSpec.EXIT, 'code': 'exit', 'name': 'Exit', 'exit_value': 100,
+                        }, {
+                            'type': NodeSpec.CANCEL, 'code': 'cancel', 'name': 'Cancel',
+                        }],
+                        'transitions': [{
+                            'origin': 'origin', 'destination': 'exit', 'name': 'Initial transition',
+                            'permission': 'sample.start_task',
+                        }]
+                    }, {
+                        'code': 'bar', 'name': 'Bar',
+                        'nodes': [{
+                            'type': NodeSpec.ENTER, 'code': 'origin', 'name': 'Origin',
+                        }, {
+                            'type': NodeSpec.EXIT, 'code': 'exit', 'name': 'Exit', 'exit_value': 100,
+                        }, {
+                            'type': NodeSpec.CANCEL, 'code': 'cancel', 'name': 'Cancel',
+                        }],
+                        'transitions': [{
+                            'origin': 'origin', 'destination': 'exit', 'name': 'Initial transition',
+                            'permission': 'sample.start_task',
+                        }]
+                    }]}
+            Workflow.Spec.install(spec)
+        exc = self.unwrapValidationError(ar.exception, '__all__')
+        self.assertEqual(exc.code, exceptions.WorkflowCourseNodeHasBranches.CODE,
+                         'Invalid subclass of ValidationError raised')
 
     def test_multiplexer_node_with_execute_permission_is_bad(self):
         with self.assertRaises(exceptions.WorkflowInvalidState) as ar:
@@ -2287,11 +2345,3 @@ class NodeSpecTestCase(ValidationErrorWrappingTestCase):
                     }]}
             Workflow.Spec.install(spec)
         exc = self.unwrapValidationError(ar.exception, 'exit_value')
-
-##########################################
-# TransitionSpec tests
-##########################################
-
-class TransitionSpecTestCase(ValidationErrorWrappingTestCase):
-
-    pass
