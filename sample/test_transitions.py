@@ -251,3 +251,35 @@ class TransitionSpecTestCase(ValidationErrorWrappingTestCase):
             )
             transition.full_clean()
         exc = self.unwrapValidationError(ar.exception, 'action_name')
+
+    def test_transition_from_step_with_condition_is_bad(self):
+        installed = self._base_install_workflow_spec().spec
+        with self.assertRaises(ValidationError) as ar:
+            transition = installed.course_specs.get(code='').node_specs.get(code='step').outbounds.first()
+            transition.condition = CallableReference('sample.support.dummy_condition_a')
+            transition.full_clean()
+        exc = self.unwrapValidationError(ar.exception, 'condition')
+
+    def test_transition_from_step_with_priority_is_bad(self):
+        installed = self._base_install_workflow_spec().spec
+        with self.assertRaises(ValidationError) as ar:
+            transition = installed.course_specs.get(code='').node_specs.get(code='step').outbounds.first()
+            transition.priority = 0
+            transition.full_clean()
+        exc = self.unwrapValidationError(ar.exception, 'priority')
+
+    def test_transition_from_step_with_action_name_is_bad(self):
+        installed = self._base_install_workflow_spec().spec
+        with self.assertRaises(ValidationError) as ar:
+            transition = installed.course_specs.get(code='').node_specs.get(code='step').outbounds.first()
+            transition.action_name = 'foo'
+            transition.full_clean()
+        exc = self.unwrapValidationError(ar.exception, 'action_name')
+
+    def test_transition_from_step_with_permission_is_bad(self):
+        installed = self._base_install_workflow_spec().spec
+        with self.assertRaises(ValidationError) as ar:
+            transition = installed.course_specs.get(code='').node_specs.get(code='step').outbounds.first()
+            transition.permission = 'sample.create_task'
+            transition.full_clean()
+        exc = self.unwrapValidationError(ar.exception, 'permission')
