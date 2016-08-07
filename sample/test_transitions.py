@@ -2,7 +2,6 @@ from django.core.exceptions import ValidationError
 from arcanelab.ouroboros.executors import Workflow
 from arcanelab.ouroboros.models import NodeSpec, TransitionSpec
 from arcanelab.ouroboros.support import CallableReference
-from arcanelab.ouroboros import exceptions
 from .support import ValidationErrorWrappingTestCase
 
 
