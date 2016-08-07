@@ -4,7 +4,19 @@ from django.test import TestCase
 
 def dummy_joiner(*args):
     # This joiner is useless and will raise errors on last join.
-    # Declared only for test purposes
+    # Declared only for test (placeholder) purposes
+    return None
+
+
+def dummy_condition_a(*args):
+    # This conditions is useless. Always returns False.
+    # Declared only for test (placeholder) purposes
+    return None
+
+
+def dummy_condition_b(*args):
+    # This conditions is useless. Always returns False.
+    # Declared only for test (placeholder) purposes
     return None
 
 
