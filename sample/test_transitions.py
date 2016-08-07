@@ -1,6 +1,7 @@
 from django.core.exceptions import ValidationError
 from arcanelab.ouroboros.executors import Workflow
 from arcanelab.ouroboros.models import NodeSpec, TransitionSpec
+from arcanelab.ouroboros.support import CallableReference
 from arcanelab.ouroboros import exceptions
 from .support import ValidationErrorWrappingTestCase
 
@@ -148,3 +149,27 @@ class TransitionSpecTestCase(ValidationErrorWrappingTestCase):
                 name='Bad Transition'
             ).full_clean()
         exc = self.unwrapValidationError(ar.exception, 'destination')
+
+    def test_transition_from_origin_with_condition_is_bad(self):
+        installed = self._base_install_workflow_spec().spec
+        with self.assertRaises(ValidationError) as ar:
+            transition = installed.course_specs.get(code='').node_specs.get(code='origin').outbounds.first()
+            transition.condition = CallableReference('sample.support.dummy_condition_a')
+            transition.full_clean()
+        exc = self.unwrapValidationError(ar.exception, 'condition')
+
+    def test_transition_from_origin_with_priority_is_bad(self):
+        installed = self._base_install_workflow_spec().spec
+        with self.assertRaises(ValidationError) as ar:
+            transition = installed.course_specs.get(code='').node_specs.get(code='origin').outbounds.first()
+            transition.priority = 0
+            transition.full_clean()
+        exc = self.unwrapValidationError(ar.exception, 'priority')
+
+    def test_transition_from_origin_with_action_name_is_bad(self):
+        installed = self._base_install_workflow_spec().spec
+        with self.assertRaises(ValidationError) as ar:
+            transition = installed.course_specs.get(code='').node_specs.get(code='origin').outbounds.first()
+            transition.action_name = 'baz'
+            transition.full_clean()
+        exc = self.unwrapValidationError(ar.exception, 'action_name')
