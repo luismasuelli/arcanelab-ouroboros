@@ -283,3 +283,45 @@ class TransitionSpecTestCase(ValidationErrorWrappingTestCase):
             transition.permission = 'sample.create_task'
             transition.full_clean()
         exc = self.unwrapValidationError(ar.exception, 'permission')
+
+    def test_transition_from_multiplexer_without_condition_is_bad(self):
+        installed = self._base_install_workflow_spec().spec
+        with self.assertRaises(ValidationError) as ar:
+            transition = installed.course_specs.get(code='').node_specs.get(code='decision').outbounds.first()
+            transition.condition = None
+            transition.full_clean()
+        exc = self.unwrapValidationError(ar.exception, 'condition')
+
+    def test_transition_from_multiplexer_without_priority_is_bad(self):
+        installed = self._base_install_workflow_spec().spec
+        with self.assertRaises(ValidationError) as ar:
+            transition = installed.course_specs.get(code='').node_specs.get(code='decision').outbounds.first()
+            transition.priority = None
+            transition.full_clean()
+        exc = self.unwrapValidationError(ar.exception, 'priority')
+
+    def test_transition_from_multiplexer_with_action_name_is_bad(self):
+        installed = self._base_install_workflow_spec().spec
+        with self.assertRaises(ValidationError) as ar:
+            transition = installed.course_specs.get(code='').node_specs.get(code='decision').outbounds.first()
+            transition.action_name = 'foo'
+            transition.full_clean()
+        exc = self.unwrapValidationError(ar.exception, 'action_name')
+
+    def test_transition_from_multiplexer_with_permission_is_bad(self):
+        installed = self._base_install_workflow_spec().spec
+        with self.assertRaises(ValidationError) as ar:
+            transition = installed.course_specs.get(code='').node_specs.get(code='decision').outbounds.first()
+            transition.permission = 'sample.create_task'
+            transition.full_clean()
+        exc = self.unwrapValidationError(ar.exception, 'permission')
+
+    def test_transition_from_multiplexer_with_duplicate_priority_is_bad(self):
+        installed = self._base_install_workflow_spec().spec
+        with self.assertRaises(ValidationError) as ar:
+            transition = installed.course_specs.get(code='').node_specs.get(code='decision').outbounds.get(
+                priority=0
+            )
+            transition.priority = 1
+            transition.full_clean()
+        exc = self.unwrapValidationError(ar.exception, 'priority')
