@@ -503,7 +503,7 @@ class TransitionSpec(models.Model):
 
     def verify_multiplexer_origin(self):
         exceptions.ensure_field('condition', self)
-        exceptions.ensure_field('priority', self)
+        exceptions.ensure_field('priority', self, False, None)
         exceptions.ensure_field('action_name', self, True, True)
         exceptions.ensure_field('permission', self, True, True)
         self.verify_unique_priority()
