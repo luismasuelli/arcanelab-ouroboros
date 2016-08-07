@@ -24,11 +24,11 @@ Our testing will involve the following example:
                 +--------------------------------------------------------------------------------+
                 |                           +----------------------------------------------------+
                 v                           v                                         +---> rejected
-created ---> reviewed ---> assigned ---> started ---> completed ---> pending approval ---> approved +--+---> ...
-                                                             +  +--> pending audit ------> audited  +  |
+created ---> reviewed ---> assigned ---> started ---> completed +--> pending approval +--> approved +--+---> ...
+                                                             |  +--> pending audit ------> audited  +  |
                                                              +-----> pending invoice ----> invoiced ---+
 
-... ---> was service? -----------------------------------+-> delivered
+... +--> was service? -----------------------------------+-> delivered
     +--> was deliverable? ---> pending delivery ---------+
     +--> otherwise ----------> pending customer pick ----+
 """
