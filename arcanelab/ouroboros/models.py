@@ -321,7 +321,8 @@ class NodeSpec(models.Model):
             return self.outbounds.all()
 
     def verify_node_has_many_branches(self):
-        exceptions.ensure(lambda obj: obj.branches.count() > 1, self, _('This node must have at least two branches'))
+        exceptions.ensure(lambda obj: obj.branches.count() > 1, self, _('This node must have at least two branches'),
+                          exceptions.WorkflowCourseNodeHasNotEnoughBranches)
         try:
             if self.branches.exclude(workflow_spec=self.course_spec.workflow_spec).exists():
                 raise exceptions.WorkflowCourseNodeInconsistentBranches(self, _('Split nodes must branch to courses in '
