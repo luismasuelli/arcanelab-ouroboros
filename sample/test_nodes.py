@@ -1250,25 +1250,178 @@ class NodeSpecTestCase(ValidationErrorWrappingTestCase):
     # testing step node
 
     def test_step_node_without_inbounds_is_bad(self):
-        pass
+        with self.assertRaises(ValidationError) as ar:
+            spec = {'model': 'sample.Task', 'code': 'wfspec', 'name': 'Workflow Spec', 'create_permission': '',
+                    'cancel_permission': '',
+                    'courses': [{
+                        'code': '', 'name': 'Single',
+                        'nodes': [{
+                            'type': NodeSpec.ENTER, 'code': 'origin', 'name': 'Origin',
+                        }, {
+                            'type': NodeSpec.STEP, 'code': 'loop-1', 'name': 'Loop-1',
+                        }, {
+                            'type': NodeSpec.EXIT, 'code': 'exit', 'name': 'Exit', 'exit_value': 100,
+                        }, {
+                            'type': NodeSpec.CANCEL, 'code': 'cancel', 'name': 'Cancel',
+                        }],
+                        'transitions': [{
+                            'origin': 'origin', 'destination': 'exit', 'name': 'Initial transition',
+                        }, {
+                            'origin': 'loop-1', 'destination': 'exit', 'name': 'Final transition',
+                        }]
+                    }]}
+            Workflow.Spec.install(spec)
+        exc = self.unwrapValidationError(ar.exception)
+        self.assertEqual(exc.code, exceptions.WorkflowCourseNodeHasNoInbound.CODE,
+                         'Invalid subclass of ValidationError raised')
 
     def test_step_node_with_no_outbounds_is_bad(self):
-        pass
+        with self.assertRaises(ValidationError) as ar:
+            spec = {'model': 'sample.Task', 'code': 'wfspec', 'name': 'Workflow Spec', 'create_permission': '',
+                    'cancel_permission': '',
+                    'courses': [{
+                        'code': '', 'name': 'Single',
+                        'nodes': [{
+                            'type': NodeSpec.ENTER, 'code': 'origin', 'name': 'Origin',
+                        }, {
+                            'type': NodeSpec.STEP, 'code': 'step', 'name': 'step',
+                        }, {
+                            'type': NodeSpec.INPUT, 'code': 'state', 'name': 'State',
+                        }, {
+                            'type': NodeSpec.EXIT, 'code': 'exit', 'name': 'Exit', 'exit_value': 100,
+                        }, {
+                            'type': NodeSpec.CANCEL, 'code': 'cancel', 'name': 'Cancel',
+                        }],
+                        'transitions': [{
+                            'origin': 'origin', 'destination': 'state', 'name': 'Initial transition',
+                        }, {
+                            'origin': 'state', 'destination': 'exit', 'name': 'Final transition',
+                            'action_name': 'break',
+                        }, {
+                            'origin': 'state', 'destination': 'step', 'name': 'Step transition',
+                            'action_name': 'go-step',
+                        }]
+                    }]}
+            Workflow.Spec.install(spec)
+        exc = self.unwrapValidationError(ar.exception)
+        self.assertEqual(exc.code, exceptions.WorkflowCourseNodeHasNoOutbound.CODE,
+                         'Invalid subclass of ValidationError raised')
 
     def test_step_node_with_many_outbounds_is_bad(self):
-        pass
+        with self.assertRaises(ValidationError) as ar:
+            spec = {'model': 'sample.Task', 'code': 'wfspec', 'name': 'Workflow Spec', 'create_permission': '',
+                    'cancel_permission': '',
+                    'courses': [{
+                        'code': '', 'name': 'Single',
+                        'nodes': [{
+                            'type': NodeSpec.ENTER, 'code': 'origin', 'name': 'Origin',
+                        }, {
+                            'type': NodeSpec.STEP, 'code': 'step', 'name': 'step',
+                        }, {
+                            'type': NodeSpec.INPUT, 'code': 'state', 'name': 'State',
+                        }, {
+                            'type': NodeSpec.EXIT, 'code': 'exit', 'name': 'Exit', 'exit_value': 100,
+                        }, {
+                            'type': NodeSpec.EXIT, 'code': 'exit-2', 'name': 'Exit 2', 'exit_value': 101,
+                        }, {
+                            'type': NodeSpec.CANCEL, 'code': 'cancel', 'name': 'Cancel',
+                        }],
+                        'transitions': [{
+                            'origin': 'origin', 'destination': 'state', 'name': 'Initial transition',
+                        }, {
+                            'origin': 'state', 'destination': 'exit', 'name': 'Final transition',
+                            'action_name': 'break',
+                        }, {
+                            'origin': 'state', 'destination': 'step', 'name': 'Step transition',
+                            'action_name': 'go-step',
+                        }, {
+                            'origin': 'step', 'destination': 'exit', 'name': 'Exit 1 transition',
+                        }, {
+                            'origin': 'step', 'destination': 'exit-2', 'name': 'Exit 2 transition',
+                        }]
+                    }]}
+            Workflow.Spec.install(spec)
+        exc = self.unwrapValidationError(ar.exception)
+        self.assertEqual(exc.code, exceptions.WorkflowCourseNodeHasMultipleOutbounds.CODE,
+                         'Invalid subclass of ValidationError raised')
 
     def test_step_node_with_branches_is_bad(self):
         pass
 
     def test_step_node_with_exit_value_is_bad(self):
-        pass
+        with self.assertRaises(exceptions.WorkflowInvalidState) as ar:
+            spec = {'model': 'sample.Task', 'code': 'wfspec', 'name': 'Workflow Spec', 'create_permission': '',
+                    'cancel_permission': '',
+                    'courses': [{
+                        'code': '', 'name': 'Single',
+                        'nodes': [{
+                            'type': NodeSpec.ENTER, 'code': 'origin', 'name': 'Origin',
+                        }, {
+                            'type': NodeSpec.STEP, 'code': 'loop-1', 'name': 'Loop-1',
+                            'exit_value': 101
+                        }, {
+                            'type': NodeSpec.EXIT, 'code': 'exit', 'name': 'Exit', 'exit_value': 100,
+                        }, {
+                            'type': NodeSpec.CANCEL, 'code': 'cancel', 'name': 'Cancel',
+                        }],
+                        'transitions': [{
+                            'origin': 'origin', 'destination': 'loop-1', 'name': 'Initial transition',
+                        }, {
+                            'origin': 'loop-1', 'destination': 'exit', 'name': 'Final transition',
+                        }]
+                    }]}
+            Workflow.Spec.install(spec)
+        exc = self.unwrapValidationError(ar.exception, 'exit_value')
 
     def test_step_node_with_joiner_is_bad(self):
-        pass
+        with self.assertRaises(exceptions.WorkflowInvalidState) as ar:
+            spec = {'model': 'sample.Task', 'code': 'wfspec', 'name': 'Workflow Spec', 'create_permission': '',
+                    'cancel_permission': '',
+                    'courses': [{
+                        'code': '', 'name': 'Single',
+                        'nodes': [{
+                            'type': NodeSpec.ENTER, 'code': 'origin', 'name': 'Origin',
+                        }, {
+                            'type': NodeSpec.STEP, 'code': 'loop-1', 'name': 'Loop-1',
+                            'joiner': 'sample.support.dummy_joiner'
+                        }, {
+                            'type': NodeSpec.EXIT, 'code': 'exit', 'name': 'Exit', 'exit_value': 100,
+                        }, {
+                            'type': NodeSpec.CANCEL, 'code': 'cancel', 'name': 'Cancel',
+                        }],
+                        'transitions': [{
+                            'origin': 'origin', 'destination': 'loop-1', 'name': 'Initial transition',
+                        }, {
+                            'origin': 'loop-1', 'destination': 'exit', 'name': 'Final transition',
+                        }]
+                    }]}
+            Workflow.Spec.install(spec)
+        exc = self.unwrapValidationError(ar.exception, 'joiner')
 
     def test_step_node_with_execute_permission_is_bad(self):
-        pass
+        with self.assertRaises(exceptions.WorkflowInvalidState) as ar:
+            spec = {'model': 'sample.Task', 'code': 'wfspec', 'name': 'Workflow Spec', 'create_permission': '',
+                    'cancel_permission': '',
+                    'courses': [{
+                        'code': '', 'name': 'Single',
+                        'nodes': [{
+                            'type': NodeSpec.ENTER, 'code': 'origin', 'name': 'Origin',
+                        }, {
+                            'type': NodeSpec.STEP, 'code': 'loop-1', 'name': 'Loop-1',
+                            'execute_permission': 'sample.cancel_task',
+                        }, {
+                            'type': NodeSpec.EXIT, 'code': 'exit', 'name': 'Exit', 'exit_value': 100,
+                        }, {
+                            'type': NodeSpec.CANCEL, 'code': 'cancel', 'name': 'Cancel',
+                        }],
+                        'transitions': [{
+                            'origin': 'origin', 'destination': 'loop-1', 'name': 'Initial transition',
+                        }, {
+                            'origin': 'loop-1', 'destination': 'exit', 'name': 'Final transition',
+                        }]
+                    }]}
+            Workflow.Spec.install(spec)
+        exc = self.unwrapValidationError(ar.exception, 'execute_permission')
 
     # testing multiplexer node
 
