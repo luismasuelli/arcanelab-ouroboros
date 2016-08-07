@@ -241,7 +241,7 @@ class Workflow(object):
                         try:
                             node_spec.branches.add(workflow_spec.course_specs.get(code=branch))
                         except models.CourseSpec.DoesNotExist:
-                            raise exceptions.WorkflowCourseNodeDoesNotExist(
+                            raise exceptions.WorkflowCourseDoesNotExist(
                                 workflow_spec, _('No course exists in the workflow spec with such code'), branch
                             )
 

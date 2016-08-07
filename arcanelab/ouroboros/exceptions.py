@@ -231,6 +231,10 @@ class WorkflowCourseNodeHasBranches(WorkflowStandardInvalidState):
     CODE = 'node-spec:node-has-branches'
 
 
+class WorkflowCourseNodeHasNotEnoughBranches(WorkflowStandardInvalidState):
+    CODE = 'node-spec:node-has-not-enough-branches'
+
+
 class WorkflowCourseNodeHasNoBranches(WorkflowStandardInvalidState):
     CODE = 'node-spec:node-has-no-branches'
 
@@ -287,6 +291,10 @@ class WorkflowCourseNodeInstanceIncompleteSplitBranchReferences(WorkflowStandard
 
 
 class WorkflowInstanceDoesNotExist(WorkflowNoSuchElement):
+    pass
+
+
+class WorkflowCourseDoesNotExist(WorkflowNoSuchElement):
     pass
 
 
