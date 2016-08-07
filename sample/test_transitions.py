@@ -11,4 +11,80 @@ from .support import ValidationErrorWrappingTestCase
 
 
 class TransitionSpecTestCase(ValidationErrorWrappingTestCase):
-    pass
+
+    def _base_install_workflow_spec(self):
+        """
+        Installs a dummy workflow, having all the possible nodes in a
+          main course, being ok.
+        """
+
+        spec = {'model': 'sample.Task', 'code': 'wfspec', 'name': 'Workflow Spec', 'create_permission': '',
+                'cancel_permission': '',
+                'courses': [{
+                    'code': '', 'name': 'Main',
+                    'nodes': [{
+                        'type': NodeSpec.ENTER, 'code': 'origin', 'name': 'Origin',
+                    }, {
+                        'type': NodeSpec.INPUT, 'code': 'input', 'name': 'Input'
+                    }, {
+                        'type': NodeSpec.SPLIT, 'code': 'split', 'name': 'Split', 'branches': ['foo', 'bar'],
+                    }, {
+                        'type': NodeSpec.STEP, 'code': 'step', 'name': 'Step'
+                    }, {
+                        'type': NodeSpec.MULTIPLEXER, 'code': 'decision', 'name': 'Decision'
+                    }, {
+                        'type': NodeSpec.EXIT, 'code': 'exit-1', 'name': 'Exit 1', 'exit_value': 101,
+                    }, {
+                        'type': NodeSpec.EXIT, 'code': 'exit-2', 'name': 'Exit 2', 'exit_value': 102,
+                    }, {
+                        'type': NodeSpec.CANCEL, 'code': 'cancel', 'name': 'Cancel',
+                    }],
+                    'transitions': [{
+                        'origin': 'origin', 'destination': 'input', 'name': 'Initial transition',
+                    }, {
+                        'origin': 'input', 'destination': 'split', 'name': 'User transition',
+                        'action_name': 'do'
+                    }, {
+                        'origin': 'split', 'destination': 'step', 'name': 'Post-split transition',
+                        'action_name': 'done'
+                    }, {
+                        'origin': 'step', 'destination': 'decision', 'name': 'Post-step transition',
+                    }, {
+                        'origin': 'decision', 'destination': 'exit-1', 'name': 'Choice A',
+                        'priority': 0, 'condition': 'sample.support.dummy_condition_a'
+                    }, {
+                        'origin': 'decision', 'destination': 'exit-2', 'name': 'Choice B',
+                        'priority': 1, 'condition': 'sample.support.dummy_condition_b'
+                    }]
+                }, {
+                    'code': 'foo', 'name': 'Foo',
+                    'nodes': [{
+                        'type': NodeSpec.ENTER, 'code': 'origin', 'name': 'Origin',
+                    }, {
+                        'type': NodeSpec.EXIT, 'code': 'exit', 'name': 'Exit', 'exit_value': 100,
+                    }, {
+                        'type': NodeSpec.CANCEL, 'code': 'cancel', 'name': 'Cancel',
+                    }, {
+                        'type': NodeSpec.JOINED, 'code': 'joined', 'name': 'Joined',
+                    }],
+                    'transitions': [{
+                        'origin': 'origin', 'destination': 'exit', 'name': 'Initial transition',
+                        'permission': 'sample.start_task',
+                    }]
+                }, {
+                    'code': 'bar', 'name': 'Bar',
+                    'nodes': [{
+                        'type': NodeSpec.ENTER, 'code': 'origin', 'name': 'Origin',
+                    }, {
+                        'type': NodeSpec.EXIT, 'code': 'exit', 'name': 'Exit', 'exit_value': 100,
+                    }, {
+                        'type': NodeSpec.CANCEL, 'code': 'cancel', 'name': 'Cancel',
+                    }, {
+                        'type': NodeSpec.JOINED, 'code': 'joined', 'name': 'Joined',
+                    }],
+                    'transitions': [{
+                        'origin': 'origin', 'destination': 'exit', 'name': 'Initial transition',
+                        'permission': 'sample.start_task',
+                    }]
+                }]}
+        return Workflow.Spec.install(spec)
