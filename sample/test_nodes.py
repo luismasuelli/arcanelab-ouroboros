@@ -1227,10 +1227,70 @@ class NodeSpecTestCase(ValidationErrorWrappingTestCase):
         pass
 
     def test_split_node_without_branches_is_bad(self):
-        pass
+        with self.assertRaises(exceptions.WorkflowInvalidState) as ar:
+            spec = {'model': 'sample.Task', 'code': 'wfspec', 'name': 'Workflow Spec', 'create_permission': '',
+                    'cancel_permission': '',
+                    'courses': [{
+                        'code': '', 'name': 'Single',
+                        'nodes': [{
+                            'type': NodeSpec.ENTER, 'code': 'origin', 'name': 'Origin',
+                        }, {
+                            'type': NodeSpec.SPLIT, 'code': 'loop-2', 'name': 'Loop-2',
+                        }, {
+                            'type': NodeSpec.EXIT, 'code': 'exit', 'name': 'Exit', 'exit_value': 101,
+                        }, {
+                            'type': NodeSpec.CANCEL, 'code': 'cancel', 'name': 'Cancel',
+                        }],
+                        'transitions': [{
+                            'origin': 'origin', 'destination': 'loop-2', 'name': 'Initial transition 1',
+                        }, {
+                            'origin': 'loop-2', 'destination': 'exit', 'name': 'End'
+                        }]
+                    }]}
+            Workflow.Spec.install(spec)
+        exc = self.unwrapValidationError(ar.exception, '__all__')
+        self.assertEqual(exc.code, exceptions.WorkflowCourseNodeHasNotEnoughBranches.CODE,
+                         'Invalid subclass of ValidationError raised')
 
     def test_split_node_with_one_branch_is_bad(self):
-        pass
+        with self.assertRaises(exceptions.WorkflowInvalidState) as ar:
+            spec = {'model': 'sample.Task', 'code': 'wfspec', 'name': 'Workflow Spec', 'create_permission': '',
+                    'cancel_permission': '',
+                    'courses': [{
+                        'code': '', 'name': 'Single',
+                        'nodes': [{
+                            'type': NodeSpec.ENTER, 'code': 'origin', 'name': 'Origin',
+                        }, {
+                            'type': NodeSpec.SPLIT, 'code': 'loop-2', 'name': 'Loop-2',
+                            'branches': ['foo'],
+                        }, {
+                            'type': NodeSpec.EXIT, 'code': 'exit', 'name': 'Exit', 'exit_value': 101,
+                        }, {
+                            'type': NodeSpec.CANCEL, 'code': 'cancel', 'name': 'Cancel',
+                        }],
+                        'transitions': [{
+                            'origin': 'origin', 'destination': 'loop-2', 'name': 'Initial transition 1',
+                        }, {
+                            'origin': 'loop-2', 'destination': 'exit', 'name': 'End'
+                        }]
+                    }, {
+                        'code': 'foo', 'name': 'Foo',
+                        'nodes': [{
+                            'type': NodeSpec.ENTER, 'code': 'origin', 'name': 'Origin',
+                        }, {
+                            'type': NodeSpec.EXIT, 'code': 'exit', 'name': 'Exit', 'exit_value': 100,
+                        }, {
+                            'type': NodeSpec.CANCEL, 'code': 'cancel', 'name': 'Cancel',
+                        }],
+                        'transitions': [{
+                            'origin': 'origin', 'destination': 'exit', 'name': 'Initial transition',
+                            'permission': 'sample.start_task',
+                        }]
+                    }]}
+            Workflow.Spec.install(spec)
+        exc = self.unwrapValidationError(ar.exception, '__all__')
+        self.assertEqual(exc.code, exceptions.WorkflowCourseNodeHasNotEnoughBranches.CODE,
+                         'Invalid subclass of ValidationError raised')
 
     def test_split_node_with_branches_in_other_workflow_is_bad(self):
         pass
