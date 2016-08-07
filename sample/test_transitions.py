@@ -1,6 +1,6 @@
 from django.core.exceptions import ValidationError
 from arcanelab.ouroboros.executors import Workflow
-from arcanelab.ouroboros.models import NodeSpec
+from arcanelab.ouroboros.models import NodeSpec, TransitionSpec
 from arcanelab.ouroboros import exceptions
 from .support import ValidationErrorWrappingTestCase
 
@@ -88,3 +88,63 @@ class TransitionSpecTestCase(ValidationErrorWrappingTestCase):
                     }]
                 }]}
         return Workflow.Spec.install(spec)
+
+    def test_transition_starting_on_exit_is_bad(self):
+        installed = self._base_install_workflow_spec().spec
+        with self.assertRaises(ValidationError) as ar:
+            TransitionSpec.objects.create(
+                origin=installed.course_specs.get(code='').node_specs.get(code='exit-1'),
+                destination=installed.course_specs.get(code='').node_specs.get(code='exit-2'),
+                name='Bad Transition'
+            ).full_clean()
+        exc = self.unwrapValidationError(ar.exception, 'origin')
+
+    def test_transition_starting_on_joined_is_bad(self):
+        installed = self._base_install_workflow_spec().spec
+        with self.assertRaises(ValidationError) as ar:
+            TransitionSpec.objects.create(
+                origin=installed.course_specs.get(code='foo').node_specs.get(code='joined'),
+                destination=installed.course_specs.get(code='foo').node_specs.get(code='exit'),
+                name='Bad Transition'
+            ).full_clean()
+        exc = self.unwrapValidationError(ar.exception, 'origin')
+
+    def test_transition_starting_on_cancel_is_bad(self):
+        installed = self._base_install_workflow_spec().spec
+        with self.assertRaises(ValidationError) as ar:
+            TransitionSpec.objects.create(
+                origin=installed.course_specs.get(code='').node_specs.get(code='cancel'),
+                destination=installed.course_specs.get(code='').node_specs.get(code='exit-1'),
+                name='Bad Transition'
+            ).full_clean()
+        exc = self.unwrapValidationError(ar.exception, 'origin')
+
+    def test_transition_ending_on_enter_is_bad(self):
+        installed = self._base_install_workflow_spec().spec
+        with self.assertRaises(ValidationError) as ar:
+            TransitionSpec.objects.create(
+                origin=installed.course_specs.get(code='').node_specs.get(code='input'),
+                destination=installed.course_specs.get(code='').node_specs.get(code='origin'),
+                name='Bad Transition', action_name='bad-trans'
+            ).full_clean()
+        exc = self.unwrapValidationError(ar.exception, 'destination')
+
+    def test_transition_ending_on_joined_is_bad(self):
+        installed = self._base_install_workflow_spec().spec
+        with self.assertRaises(ValidationError) as ar:
+            TransitionSpec.objects.create(
+                origin=installed.course_specs.get(code='foo').node_specs.get(code='origin'),
+                destination=installed.course_specs.get(code='foo').node_specs.get(code='joined'),
+                name='Bad Transition'
+            ).full_clean()
+        exc = self.unwrapValidationError(ar.exception, 'destination')
+
+    def test_transition_ending_on_cancel_is_bad(self):
+        installed = self._base_install_workflow_spec().spec
+        with self.assertRaises(ValidationError) as ar:
+            TransitionSpec.objects.create(
+                origin=installed.course_specs.get(code='').node_specs.get(code='origin'),
+                destination=installed.course_specs.get(code='').node_specs.get(code='cancel'),
+                name='Bad Transition'
+            ).full_clean()
+        exc = self.unwrapValidationError(ar.exception, 'destination')
