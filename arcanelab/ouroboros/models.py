@@ -329,10 +329,9 @@ class NodeSpec(models.Model):
                                                                                 'the same workflow'))
         except CourseSpec.DoesNotExist:
             pass
-        if (self.joiner is None) ^ (self.outbounds.count() == 1):
-            raise exceptions.WorkflowCourseNodeInconsistentJoiner(self, _('Split nodes with one outbound must have no '
-                                                                          'joiner, while split nodes with many '
-                                                                          'outbounds must have joiner'))
+        if not self.joiner and (self.outbounds.count() > 1):
+            raise exceptions.WorkflowCourseNodeInconsistentJoiner(self, _('Split nodes with many outbounds must have '
+                                                                          'joiner'))
 
     def verify_node_has_no_branches(self):
         exceptions.ensure(lambda obj: not obj.branches.exists(), self, _('This node must have no branches'),

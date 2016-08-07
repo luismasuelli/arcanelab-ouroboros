@@ -688,8 +688,9 @@ class Workflow(object):
                 if all(Workflow.CourseHelpers.is_terminated(branch) for branch in branches):
                     cls._run_transition(course_instance, transition, user)
             else:
-                # By cleaning we know we will be handling many transitions
+                # By cleaning we know we will be handling at least one transition
                 transitions = node_spec.outbounds.all()
+                one_transition = transitions.count() == 1
                 # We call the joiner with its arguments
                 reaching_branch_code = reaching_branch.code
                 # Making a dictionary of branch statuses
@@ -698,7 +699,7 @@ class Workflow(object):
                 # Execute the joiner with (document, branch statuses, and current branch being joined) and
                 #   get the return value.
                 returned = joiner(course_instance.workflow_instance.document, branch_statuses, reaching_branch_code)
-                if returned is None:
+                if (one_transition and not returned) or returned is None:
                     # If all the branches have ended (i.e. they have non-None values), this
                     #   is an error.
                     # Otherwise, we do nothing.
@@ -707,7 +708,7 @@ class Workflow(object):
                             node_spec, _('The joiner callable returned None -not deciding any action- but '
                                          'all the branches have terminated')
                         )
-                elif isinstance(returned, string_types):
+                elif not one_transition and isinstance(returned, string_types):
                     # The transitions will have unique and present action codes.
                     # We validate they have unique codes and all codes are present.
                     # IF the count of distinct action_names is not the same as the count
@@ -732,11 +733,21 @@ class Workflow(object):
                             cls._join(branches.get(course_spec__code=code), user)
                     # And THEN we execute our picked transition
                     cls._run_transition(course_instance, transition, user)
-                else:
+                elif not one_transition:
                     # Invalid joiner return value type
                     raise exceptions.WorkflowCourseNodeInvalidSplitResolutionCode(
                         node_spec, _('Invalid joiner resolution code type. Expected string or None'), returned
                     )
+                else:
+                    # We know we have one transition, and the returned joiner value was bool(x) == True
+                    transition = transitions.first()
+                    transition.clean()
+                    # We force a join in any non-terminated branch (i.e. status in None)
+                    for code, status in items(branch_statuses):
+                        if status is None:
+                            cls._join(branches.get(course_spec__code=code), user)
+                    # And THEN we execute our picked transition
+                    cls._run_transition(course_instance, transition, user)
 
     def __init__(self, workflow_instance):
         """
