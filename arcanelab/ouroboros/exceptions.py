@@ -398,7 +398,7 @@ def ensure_field(field, obj, null=False, blank=False):
         raise WorkflowModelFieldMustBeNull(obj, {field: [_('This field must be null.')]})
     elif not null and value is None:
         raise WorkflowModelFieldMustNotBeNull(obj, {field: [_('This field cannot be null.')]})
-    if blank and value:
+    if blank is True and value:
         raise WorkflowModelFieldMustBeBlank(obj, {field: [_('This field must be blank.')]})
-    elif not blank and not value:
+    elif blank is False and not value:
         raise WorkflowModelFieldMustNotBeBlank(obj, {field: [_('This field cannot be blank.')]})
