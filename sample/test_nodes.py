@@ -1909,13 +1909,100 @@ class NodeSpecTestCase(ValidationErrorWrappingTestCase):
     # testing multiplexer node
 
     def test_multiplexer_node_with_no_inbounds_is_bad(self):
-        pass
+        with self.assertRaises(exceptions.WorkflowInvalidState) as ar:
+            spec = {'model': 'sample.Task', 'code': 'wfspec', 'name': 'Workflow Spec', 'create_permission': '',
+                    'cancel_permission': '',
+                    'courses': [{
+                        'code': '', 'name': 'Single',
+                        'nodes': [{
+                            'type': NodeSpec.ENTER, 'code': 'origin', 'name': 'Origin'
+                        }, {
+                            'type': NodeSpec.MULTIPLEXER, 'code': 'multiplexer', 'name': 'Decision',
+                        }, {
+                            'type': NodeSpec.EXIT, 'code': 'exit-a', 'name': 'Exit A', 'exit_value': 100,
+                        }, {
+                            'type': NodeSpec.EXIT, 'code': 'exit-b', 'name': 'Exit B', 'exit_value': 101,
+                        }, {
+                            'type': NodeSpec.CANCEL, 'code': 'cancel', 'name': 'Cancel',
+                        }],
+                        'transitions': [{
+                            'origin': 'origin', 'destination': 'exit-a', 'name': 'Bypass transition',
+                        }, {
+                            'origin': 'multiplexer', 'destination': 'exit-a', 'name': 'Choice A',
+                            'priority': 0, 'condition': 'sample.support.dummy_condition_a'
+                        }, {
+                            'origin': 'multiplexer', 'destination': 'exit-b', 'name': 'Choice B',
+                            'priority': 1, 'condition': 'sample.support.dummy_condition_b'
+                        }]
+                    }]}
+            Workflow.Spec.install(spec)
+        exc = self.unwrapValidationError(ar.exception, '__all__')
+        self.assertEqual(exc.code, exceptions.WorkflowCourseNodeHasNoInbound.CODE,
+                         'Invalid subclass of ValidationError raised')
 
     def test_multiplexer_node_with_no_outbounds_is_bad(self):
-        pass
+        with self.assertRaises(exceptions.WorkflowInvalidState) as ar:
+            spec = {'model': 'sample.Task', 'code': 'wfspec', 'name': 'Workflow Spec', 'create_permission': '',
+                    'cancel_permission': '',
+                    'courses': [{
+                        'code': '', 'name': 'Single',
+                        'nodes': [{
+                            'type': NodeSpec.ENTER, 'code': 'origin', 'name': 'Origin'
+                        }, {
+                            'type': NodeSpec.MULTIPLEXER, 'code': 'multiplexer', 'name': 'Decision',
+                        }, {
+                            'type': NodeSpec.MULTIPLEXER, 'code': 'multiplexer-2', 'name': 'Decision 2',
+                        }, {
+                            'type': NodeSpec.EXIT, 'code': 'exit-a', 'name': 'Exit A', 'exit_value': 100,
+                        }, {
+                            'type': NodeSpec.EXIT, 'code': 'exit-b', 'name': 'Exit B', 'exit_value': 101,
+                        }, {
+                            'type': NodeSpec.CANCEL, 'code': 'cancel', 'name': 'Cancel',
+                        }],
+                        'transitions': [{
+                            'origin': 'origin', 'destination': 'multiplexer', 'name': 'Bypass transition',
+                        }, {
+                            'origin': 'multiplexer', 'destination': 'multiplexer-2', 'name': 'Choice A',
+                            'priority': 0, 'condition': 'sample.support.dummy_condition_a'
+                        }, {
+                            'origin': 'multiplexer', 'destination': 'exit-a', 'name': 'Choice A',
+                            'priority': 0, 'condition': 'sample.support.dummy_condition_b'
+                        }, {
+                            'origin': 'multiplexer', 'destination': 'exit-b', 'name': 'Choice B',
+                            'priority': 1, 'condition': 'sample.support.dummy_condition_c'
+                        }]
+                    }]}
+            Workflow.Spec.install(spec)
+        exc = self.unwrapValidationError(ar.exception, '__all__')
+        self.assertEqual(exc.code, exceptions.WorkflowCourseNodeHasNoOutbound.CODE,
+                         'Invalid subclass of ValidationError raised')
 
     def test_multiplexer_node_with_one_outbound_is_bad(self):
-        pass
+        with self.assertRaises(exceptions.WorkflowInvalidState) as ar:
+            spec = {'model': 'sample.Task', 'code': 'wfspec', 'name': 'Workflow Spec', 'create_permission': '',
+                    'cancel_permission': '',
+                    'courses': [{
+                        'code': '', 'name': 'Single',
+                        'nodes': [{
+                            'type': NodeSpec.ENTER, 'code': 'origin', 'name': 'Origin'
+                        }, {
+                            'type': NodeSpec.MULTIPLEXER, 'code': 'multiplexer', 'name': 'Decision',
+                        }, {
+                            'type': NodeSpec.EXIT, 'code': 'exit-a', 'name': 'Exit A', 'exit_value': 100,
+                        }, {
+                            'type': NodeSpec.CANCEL, 'code': 'cancel', 'name': 'Cancel',
+                        }],
+                        'transitions': [{
+                            'origin': 'origin', 'destination': 'multiplexer', 'name': 'Bypass transition',
+                        }, {
+                            'origin': 'multiplexer', 'destination': 'exit-a', 'name': 'Choice A',
+                            'priority': 0, 'condition': 'sample.support.dummy_condition_a'
+                        }]
+                    }]}
+            Workflow.Spec.install(spec)
+        exc = self.unwrapValidationError(ar.exception, '__all__')
+        self.assertEqual(exc.code, exceptions.WorkflowCourseNodeHasOneOutbound.CODE,
+                         'Invalid subclass of ValidationError raised')
 
     def test_multiplexer_node_with_branches_is_bad(self):
         pass

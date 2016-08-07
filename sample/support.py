@@ -20,6 +20,12 @@ def dummy_condition_b(*args):
     return None
 
 
+def dummy_condition_c(*args):
+    # This conditions is useless. Always returns False.
+    # Declared only for test (placeholder) purposes
+    return None
+
+
 class ValidationErrorWrappingTestCase(TestCase):
 
     def unwrapValidationError(self, exception, field='__all__'):
