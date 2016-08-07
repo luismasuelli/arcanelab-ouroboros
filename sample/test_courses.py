@@ -124,13 +124,6 @@ class WorkflowSpecTestCase(ValidationErrorWrappingTestCase):
         self.assertEqual(exc.code, exceptions.WorkflowSpecHasCircularDependentCourses.CODE,
                          'Invalid subclass of ValidationError raised')
 
-    def tearDown(self):
-        """
-        Removing the successfully created workflow spec.
-        """
-
-        WorkflowSpec.objects.all().delete()
-
 ############################################
 # CourseSpec tests
 ############################################
@@ -377,10 +370,3 @@ class CourseSpecTestCase(ValidationErrorWrappingTestCase):
             exc = self.unwrapValidationError(ar.exception)
             self.assertEqual(exc.code, exceptions.WorkflowCourseSpecHasInvalidCallers.CODE,
                              'Invalid subclass of ValidationError raised')
-
-    def tearDown(self):
-        """
-        Removing the successfully created workflow spec.
-        """
-
-        WorkflowSpec.objects.all().delete()
