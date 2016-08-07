@@ -216,3 +216,38 @@ class TransitionSpecTestCase(ValidationErrorWrappingTestCase):
             )
             transition.full_clean()
         exc = self.unwrapValidationError(ar.exception, 'action_name')
+
+    def test_transition_from_input_with_condition_is_bad(self):
+        installed = self._base_install_workflow_spec().spec
+        with self.assertRaises(ValidationError) as ar:
+            transition = installed.course_specs.get(code='').node_specs.get(code='input').outbounds.first()
+            transition.condition = CallableReference('sample.support.dummy_condition_a')
+            transition.full_clean()
+        exc = self.unwrapValidationError(ar.exception, 'condition')
+
+    def test_transition_from_input_with_priority_is_bad(self):
+        installed = self._base_install_workflow_spec().spec
+        with self.assertRaises(ValidationError) as ar:
+            transition = installed.course_specs.get(code='').node_specs.get(code='input').outbounds.first()
+            transition.priority = 0
+            transition.full_clean()
+        exc = self.unwrapValidationError(ar.exception, 'priority')
+
+    def test_transition_from_input_without_action_name_is_bad(self):
+        installed = self._base_install_workflow_spec().spec
+        with self.assertRaises(ValidationError) as ar:
+            transition = installed.course_specs.get(code='').node_specs.get(code='input').outbounds.first()
+            transition.action_name = None
+            transition.full_clean()
+        exc = self.unwrapValidationError(ar.exception, 'action_name')
+
+    def test_transition_from_input_with_duplicate_action_name_is_bad(self):
+        installed = self._base_install_workflow_spec().spec
+        with self.assertRaises(ValidationError) as ar:
+            transition = installed.course_specs.get(code='').node_specs.get(code='input').outbounds.create(
+                name='Dupe Transition',
+                action_name='do',  # duplicate
+                destination=installed.course_specs.get(code='').node_specs.get(code='exit-1')
+            )
+            transition.full_clean()
+        exc = self.unwrapValidationError(ar.exception, 'action_name')
