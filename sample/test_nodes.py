@@ -2008,13 +2008,97 @@ class NodeSpecTestCase(ValidationErrorWrappingTestCase):
         pass
 
     def test_multiplexer_node_with_execute_permission_is_bad(self):
-        pass
+        with self.assertRaises(exceptions.WorkflowInvalidState) as ar:
+            spec = {'model': 'sample.Task', 'code': 'wfspec', 'name': 'Workflow Spec', 'create_permission': '',
+                    'cancel_permission': '',
+                    'courses': [{
+                        'code': '', 'name': 'Single',
+                        'nodes': [{
+                            'type': NodeSpec.ENTER, 'code': 'origin', 'name': 'Origin'
+                        }, {
+                            'type': NodeSpec.MULTIPLEXER, 'code': 'multiplexer', 'name': 'Decision',
+                            'execute_permission': 'sample.cancel_task',
+                        }, {
+                            'type': NodeSpec.EXIT, 'code': 'exit-a', 'name': 'Exit A', 'exit_value': 100,
+                        }, {
+                            'type': NodeSpec.EXIT, 'code': 'exit-b', 'name': 'Exit B', 'exit_value': 101,
+                        }, {
+                            'type': NodeSpec.CANCEL, 'code': 'cancel', 'name': 'Cancel',
+                        }],
+                        'transitions': [{
+                            'origin': 'origin', 'destination': 'multiplexer', 'name': 'Bypass transition',
+                        }, {
+                            'origin': 'multiplexer', 'destination': 'exit-a', 'name': 'Choice A',
+                            'priority': 0, 'condition': 'sample.support.dummy_condition_a'
+                        }, {
+                            'origin': 'multiplexer', 'destination': 'exit-b', 'name': 'Choice B',
+                            'priority': 1, 'condition': 'sample.support.dummy_condition_b'
+                        }]
+                    }]}
+            Workflow.Spec.install(spec)
+        exc = self.unwrapValidationError(ar.exception, 'execute_permission')
 
     def test_multiplexer_node_with_joiner_is_bad(self):
-        pass
+        with self.assertRaises(exceptions.WorkflowInvalidState) as ar:
+            spec = {'model': 'sample.Task', 'code': 'wfspec', 'name': 'Workflow Spec', 'create_permission': '',
+                    'cancel_permission': '',
+                    'courses': [{
+                        'code': '', 'name': 'Single',
+                        'nodes': [{
+                            'type': NodeSpec.ENTER, 'code': 'origin', 'name': 'Origin'
+                        }, {
+                            'type': NodeSpec.MULTIPLEXER, 'code': 'multiplexer', 'name': 'Decision',
+                            'joiner': 'sample.support.dummy_joiner',
+                        }, {
+                            'type': NodeSpec.EXIT, 'code': 'exit-a', 'name': 'Exit A', 'exit_value': 100,
+                        }, {
+                            'type': NodeSpec.EXIT, 'code': 'exit-b', 'name': 'Exit B', 'exit_value': 101,
+                        }, {
+                            'type': NodeSpec.CANCEL, 'code': 'cancel', 'name': 'Cancel',
+                        }],
+                        'transitions': [{
+                            'origin': 'origin', 'destination': 'multiplexer', 'name': 'Bypass transition',
+                        }, {
+                            'origin': 'multiplexer', 'destination': 'exit-a', 'name': 'Choice A',
+                            'priority': 0, 'condition': 'sample.support.dummy_condition_a'
+                        }, {
+                            'origin': 'multiplexer', 'destination': 'exit-b', 'name': 'Choice B',
+                            'priority': 1, 'condition': 'sample.support.dummy_condition_b'
+                        }]
+                    }]}
+            Workflow.Spec.install(spec)
+        exc = self.unwrapValidationError(ar.exception, 'joiner')
 
     def test_multiplexer_node_with_exit_value_is_bad(self):
-        pass
+        with self.assertRaises(exceptions.WorkflowInvalidState) as ar:
+            spec = {'model': 'sample.Task', 'code': 'wfspec', 'name': 'Workflow Spec', 'create_permission': '',
+                    'cancel_permission': '',
+                    'courses': [{
+                        'code': '', 'name': 'Single',
+                        'nodes': [{
+                            'type': NodeSpec.ENTER, 'code': 'origin', 'name': 'Origin'
+                        }, {
+                            'type': NodeSpec.MULTIPLEXER, 'code': 'multiplexer', 'name': 'Decision',
+                            'exit_value': 102,
+                        }, {
+                            'type': NodeSpec.EXIT, 'code': 'exit-a', 'name': 'Exit A', 'exit_value': 100,
+                        }, {
+                            'type': NodeSpec.EXIT, 'code': 'exit-b', 'name': 'Exit B', 'exit_value': 101,
+                        }, {
+                            'type': NodeSpec.CANCEL, 'code': 'cancel', 'name': 'Cancel',
+                        }],
+                        'transitions': [{
+                            'origin': 'origin', 'destination': 'multiplexer', 'name': 'Bypass transition',
+                        }, {
+                            'origin': 'multiplexer', 'destination': 'exit-a', 'name': 'Choice A',
+                            'priority': 0, 'condition': 'sample.support.dummy_condition_a'
+                        }, {
+                            'origin': 'multiplexer', 'destination': 'exit-b', 'name': 'Choice B',
+                            'priority': 1, 'condition': 'sample.support.dummy_condition_b'
+                        }]
+                    }]}
+            Workflow.Spec.install(spec)
+        exc = self.unwrapValidationError(ar.exception, 'exit_value')
 
     # testing input node
 
