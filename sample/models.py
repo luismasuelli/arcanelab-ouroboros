@@ -28,7 +28,7 @@ created ---> reviewed ---> assigned ---> started ---> completed +--> pending app
                                                              |  +--> pending audit ------> audited  +  |
                                                              +-----> pending invoice ----> invoiced ---+
 
-... +--> was service? -----------------------------------+-> delivered
+... +--> was service? -----------------------------------+--> notify --> delivered
     +--> was deliverable? ---> pending delivery ---------+
     +--> otherwise ----------> pending customer pick ----+
 """
@@ -118,6 +118,8 @@ class TaskPermissionLogic(PermissionLogic):
             return user_obj == obj.auditor
         elif perm == pick_attend:
             return user_obj == obj.attendant
+        elif perm == deliver:
+            return user_obj == obj.dispatcher
         return False
 
 
