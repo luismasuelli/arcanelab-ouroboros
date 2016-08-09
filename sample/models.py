@@ -54,6 +54,7 @@ class Task(Document):
     )
 
     area = models.ForeignKey(Area, null=False, blank=False, on_delete=models.CASCADE)
+    service_type = models.CharField(max_length=20, choices=TYPES, null=False, blank=False)
     performer = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='+', null=False, blank=False, on_delete=models.CASCADE)
     reviewer = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='+', null=False, blank=False, on_delete=models.CASCADE)
     accountant = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='+', null=False, blank=False, on_delete=models.CASCADE)
