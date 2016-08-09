@@ -47,7 +47,7 @@ class WorkflowSpec(models.Model):
     document_type = models.ForeignKey(ContentType, null=False, blank=False, on_delete=models.CASCADE,
                                       validators=[valid_document_type], verbose_name=_('Document Type'),
                                       help_text=_('Accepted related document class'))
-    code = models.SlugField(max_length=20, null=False, blank=False, unique=True, verbose_name=_('Code'),
+    code = models.SlugField(max_length=30, null=False, blank=False, unique=True, verbose_name=_('Code'),
                             help_text=_('Internal (unique) code'))
     name = models.CharField(max_length=60, null=False, blank=False, verbose_name=_('Name'))
     description = models.TextField(max_length=1023, null=False, blank=True, verbose_name=_('Description'))
@@ -146,7 +146,7 @@ class CourseSpec(models.Model):
     workflow_spec = models.ForeignKey(WorkflowSpec, null=False, blank=False, on_delete=models.CASCADE,
                                       related_name='course_specs', verbose_name=_('Workflow Spec'),
                                       help_text=_('Workflow spec this course spec belongs to'))
-    code = models.SlugField(max_length=20, null=False, blank=True, verbose_name=_('Code'),
+    code = models.SlugField(max_length=30, null=False, blank=True, verbose_name=_('Code'),
                             help_text=_('Internal (unique) code'))
     name = models.CharField(max_length=60, null=False, blank=False, verbose_name=_('Name'))
     description = models.TextField(max_length=1023, null=False, blank=True, verbose_name=_('Description'))
@@ -252,7 +252,7 @@ class NodeSpec(models.Model):
     course_spec = models.ForeignKey(CourseSpec, null=False, blank=False, on_delete=models.CASCADE,
                                     related_name='node_specs', verbose_name=_('Course Spec'),
                                     help_text=_('Course spec this node spec belongs to'))
-    code = models.SlugField(max_length=20, null=False, blank=False, verbose_name=_('Code'),
+    code = models.SlugField(max_length=30, null=False, blank=False, verbose_name=_('Code'),
                             help_text=_('Internal (unique) code'))
     name = models.CharField(max_length=60, null=False, blank=False, verbose_name=_('Name'))
     description = models.TextField(max_length=1023, null=False, blank=True, verbose_name=_('Description'))
@@ -446,7 +446,7 @@ class TransitionSpec(models.Model):
                                     related_name='inbounds', validators=[valid_destination_types],
                                     verbose_name=_('Destination'), help_text=_('Destination node'))
     # These fields are only allowed for split and input
-    action_name = models.SlugField(max_length=20, blank=True, null=True, verbose_name=_('Action Name'),
+    action_name = models.SlugField(max_length=30, blank=True, null=True, verbose_name=_('Action Name'),
                                    help_text=_('Action name for this transition. Unique with respect to the origin '
                                                'node. Expected only for split and input nodes'))
     name = models.CharField(max_length=60, null=False, blank=False, verbose_name=_('Name'))
