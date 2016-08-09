@@ -799,7 +799,7 @@ class Workflow(object):
             cls.PermissionsChecker.can_instantiate_workflow(workflow_instance, user)
             workflow_instance.full_clean()
             workflow_instance.save()
-            course_spec = workflow_spec.course_specs.get(depth=0)
+            course_spec = workflow_spec.course_specs.get(callers__isnull=True)
             course_spec.full_clean()
             cls.WorkflowRunner._instantiate_course(workflow_instance, workflow_spec, None, user)
             return cls(workflow_instance)
