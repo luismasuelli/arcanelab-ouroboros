@@ -203,6 +203,18 @@ class WorkflowCourseSpecHasInvalidCallers(WorkflowStandardInvalidState):
     CODE = 'course-spec:invalid-callers'
 
 
+class WorkflowCourseSpecHasAutomaticPath(WorkflowStandardInvalidState):
+    CODE = 'course-spec:automatic-path'
+
+
+class WorkflowCourseSpecHasUnreachableNodesByEnter(WorkflowStandardInvalidState):
+    CODE = 'course-spec:unreachable-nodes-by-enter'
+
+
+class WorkflowCourseSpecHasUnreachableNodesByExit(WorkflowStandardInvalidState):
+    CODE = 'course-spec:unreachable-nodes-by-exit'
+
+
 class WorkflowCourseNodeHasInbounds(WorkflowStandardInvalidState):
     CODE = 'node-spec:node-has-inbounds'
 

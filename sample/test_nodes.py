@@ -4,6 +4,16 @@ from arcanelab.ouroboros.models import NodeSpec
 from arcanelab.ouroboros import exceptions
 from .support import ValidationErrorWrappingTestCase
 
+# TODO WARNING I MADE CHANGES TO THE WAY THE BRANCHES BEHAVE.
+# TODO   AT MODEL LEVEL, COURSES DO NOT ALLOW UNREACHABLE NODES AND
+# TODO   -IF BEING CHILDREN COURSES- DO NOT ALLOW AN AUTOMATIC PATH
+# TODO   FROM THE ENTER NODE TO ANY EXIT NODE, WITHOUT NODES OF TYPE
+# TODO   SPLIT OR INPUT. TESTS MUST BE CHANGED ACCORDINGLY SO THEY
+# TODO   TEST THESE VALIDATIONS AND DO NOT FAIL THEM IN THE BRANCHES
+# TODO   NOT BEING TESTED (ALSO, CERTAIN TESTS WILL CHANGE THE WAY
+# TODO   THEY FAIL, SO AN INTENSIVE CHECK MUST BE DONE). THESE CHANGES
+# TODO   IN THE TESTS MUST BE AMEND-COMMITTED
+
 # TODO check on instances
 
 # TODO check on runs
@@ -783,6 +793,8 @@ class NodeSpecTestCase(ValidationErrorWrappingTestCase):
                         'nodes': [{
                             'type': NodeSpec.ENTER, 'code': 'origin', 'name': 'Origin',
                         }, {
+                            'type': NodeSpec.INPUT, 'code': 'input', 'name': 'Input',
+                        }, {
                             'type': NodeSpec.EXIT, 'code': 'exit', 'name': 'Exit', 'exit_value': 100,
                         }, {
                             'type': NodeSpec.CANCEL, 'code': 'cancel', 'name': 'Cancel',
@@ -790,14 +802,19 @@ class NodeSpecTestCase(ValidationErrorWrappingTestCase):
                             'type': NodeSpec.JOINED, 'code': 'joined', 'name': 'Joined',
                         }],
                         'transitions': [{
-                            'origin': 'origin', 'destination': 'exit', 'name': 'Initial transition',
+                            'origin': 'origin', 'destination': 'input', 'name': 'Initial transition',
                             'permission': 'sample.start_task',
+                        }, {
+                            'origin': 'input', 'destination': 'exit', 'name': 'Initial transition',
+                            'permission': 'sample.start_task', 'action_name': 'end'
                         }]
                     }, {
                         'code': 'bar', 'name': 'Bar',
                         'nodes': [{
                             'type': NodeSpec.ENTER, 'code': 'origin', 'name': 'Origin',
                         }, {
+                            'type': NodeSpec.INPUT, 'code': 'input', 'name': 'Input',
+                        }, {
                             'type': NodeSpec.EXIT, 'code': 'exit', 'name': 'Exit', 'exit_value': 100,
                         }, {
                             'type': NodeSpec.CANCEL, 'code': 'cancel', 'name': 'Cancel',
@@ -805,8 +822,11 @@ class NodeSpecTestCase(ValidationErrorWrappingTestCase):
                             'type': NodeSpec.JOINED, 'code': 'joined', 'name': 'Joined',
                         }],
                         'transitions': [{
-                            'origin': 'origin', 'destination': 'exit', 'name': 'Initial transition',
+                            'origin': 'origin', 'destination': 'input', 'name': 'Initial transition',
                             'permission': 'sample.start_task',
+                        }, {
+                            'origin': 'input', 'destination': 'exit', 'name': 'Initial transition',
+                            'permission': 'sample.start_task', 'action_name': 'end'
                         }]
                     }]}
             installed = Workflow.Spec.install(spec)
@@ -860,6 +880,8 @@ class NodeSpecTestCase(ValidationErrorWrappingTestCase):
                         'nodes': [{
                             'type': NodeSpec.ENTER, 'code': 'origin', 'name': 'Origin',
                         }, {
+                            'type': NodeSpec.INPUT, 'code': 'input', 'name': 'Input',
+                        }, {
                             'type': NodeSpec.EXIT, 'code': 'exit', 'name': 'Exit', 'exit_value': 100,
                         }, {
                             'type': NodeSpec.CANCEL, 'code': 'cancel', 'name': 'Cancel',
@@ -867,14 +889,19 @@ class NodeSpecTestCase(ValidationErrorWrappingTestCase):
                             'type': NodeSpec.JOINED, 'code': 'joined', 'name': 'Joined',
                         }],
                         'transitions': [{
-                            'origin': 'origin', 'destination': 'exit', 'name': 'Initial transition',
+                            'origin': 'origin', 'destination': 'input', 'name': 'Initial transition',
                             'permission': 'sample.start_task',
+                        }, {
+                            'origin': 'input', 'destination': 'exit', 'name': 'Initial transition',
+                            'permission': 'sample.start_task', 'action_name': 'end'
                         }]
                     }, {
                         'code': 'bar', 'name': 'Bar',
                         'nodes': [{
                             'type': NodeSpec.ENTER, 'code': 'origin', 'name': 'Origin',
                         }, {
+                            'type': NodeSpec.INPUT, 'code': 'input', 'name': 'Input',
+                        }, {
                             'type': NodeSpec.EXIT, 'code': 'exit', 'name': 'Exit', 'exit_value': 100,
                         }, {
                             'type': NodeSpec.CANCEL, 'code': 'cancel', 'name': 'Cancel',
@@ -882,8 +909,11 @@ class NodeSpecTestCase(ValidationErrorWrappingTestCase):
                             'type': NodeSpec.JOINED, 'code': 'joined', 'name': 'Joined',
                         }],
                         'transitions': [{
-                            'origin': 'origin', 'destination': 'exit', 'name': 'Initial transition',
+                            'origin': 'origin', 'destination': 'input', 'name': 'Initial transition',
                             'permission': 'sample.start_task',
+                        }, {
+                            'origin': 'input', 'destination': 'exit', 'name': 'Initial transition',
+                            'permission': 'sample.start_task', 'action_name': 'end'
                         }]
                     }]}
             installed = Workflow.Spec.install(spec)
@@ -952,27 +982,14 @@ class NodeSpecTestCase(ValidationErrorWrappingTestCase):
                             'permission': 'sample.start_task',
                         }, {
                             'origin': 'split', 'destination': 'exit', 'name': 'Initial transition',
-                            'permission': 'sample.start_task', 'action_name': 'end',
+                            'action_name': 'end',
                         }]
                     }, {
                         'code': 'bar', 'name': 'Bar',
                         'nodes': [{
                             'type': NodeSpec.ENTER, 'code': 'origin', 'name': 'Origin',
                         }, {
-                            'type': NodeSpec.EXIT, 'code': 'exit', 'name': 'Exit', 'exit_value': 100,
-                        }, {
-                            'type': NodeSpec.CANCEL, 'code': 'cancel', 'name': 'Cancel',
-                        }, {
-                            'type': NodeSpec.JOINED, 'code': 'joined', 'name': 'Joined',
-                        }],
-                        'transitions': [{
-                            'origin': 'origin', 'destination': 'exit', 'name': 'Initial transition',
-                            'permission': 'sample.start_task',
-                        }]
-                    }, {
-                        'code': 'bat', 'name': 'Bat',
-                        'nodes': [{
-                            'type': NodeSpec.ENTER, 'code': 'origin', 'name': 'Origin',
+                            'type': NodeSpec.INPUT, 'code': 'input', 'name': 'Input',
                         }, {
                             'type': NodeSpec.EXIT, 'code': 'exit', 'name': 'Exit', 'exit_value': 100,
                         }, {
@@ -981,14 +998,19 @@ class NodeSpecTestCase(ValidationErrorWrappingTestCase):
                             'type': NodeSpec.JOINED, 'code': 'joined', 'name': 'Joined',
                         }],
                         'transitions': [{
-                            'origin': 'origin', 'destination': 'exit', 'name': 'Initial transition',
+                            'origin': 'origin', 'destination': 'input', 'name': 'Initial transition',
                             'permission': 'sample.start_task',
+                        }, {
+                            'origin': 'input', 'destination': 'exit', 'name': 'Initial transition',
+                            'permission': 'sample.start_task', 'action_name': 'end'
                         }]
                     }, {
                         'code': 'baz', 'name': 'Baz',
                         'nodes': [{
                             'type': NodeSpec.ENTER, 'code': 'origin', 'name': 'Origin',
                         }, {
+                            'type': NodeSpec.INPUT, 'code': 'input', 'name': 'Input',
+                        }, {
                             'type': NodeSpec.EXIT, 'code': 'exit', 'name': 'Exit', 'exit_value': 100,
                         }, {
                             'type': NodeSpec.CANCEL, 'code': 'cancel', 'name': 'Cancel',
@@ -996,8 +1018,31 @@ class NodeSpecTestCase(ValidationErrorWrappingTestCase):
                             'type': NodeSpec.JOINED, 'code': 'joined', 'name': 'Joined',
                         }],
                         'transitions': [{
-                            'origin': 'origin', 'destination': 'exit', 'name': 'Initial transition',
+                            'origin': 'origin', 'destination': 'input', 'name': 'Initial transition',
                             'permission': 'sample.start_task',
+                        }, {
+                            'origin': 'input', 'destination': 'exit', 'name': 'Initial transition',
+                            'permission': 'sample.start_task', 'action_name': 'end'
+                        }]
+                    }, {
+                        'code': 'bat', 'name': 'Bat',
+                        'nodes': [{
+                            'type': NodeSpec.ENTER, 'code': 'origin', 'name': 'Origin',
+                        }, {
+                            'type': NodeSpec.INPUT, 'code': 'input', 'name': 'Input',
+                        }, {
+                            'type': NodeSpec.EXIT, 'code': 'exit', 'name': 'Exit', 'exit_value': 100,
+                        }, {
+                            'type': NodeSpec.CANCEL, 'code': 'cancel', 'name': 'Cancel',
+                        }, {
+                            'type': NodeSpec.JOINED, 'code': 'joined', 'name': 'Joined',
+                        }],
+                        'transitions': [{
+                            'origin': 'origin', 'destination': 'input', 'name': 'Initial transition',
+                            'permission': 'sample.start_task',
+                        }, {
+                            'origin': 'input', 'destination': 'exit', 'name': 'Initial transition',
+                            'permission': 'sample.start_task', 'action_name': 'end'
                         }]
                     }]}
             Workflow.Spec.install(spec)
@@ -1416,26 +1461,34 @@ class NodeSpecTestCase(ValidationErrorWrappingTestCase):
                         'nodes': [{
                             'type': NodeSpec.ENTER, 'code': 'origin', 'name': 'Origin',
                         }, {
-                            'type': NodeSpec.EXIT, 'code': 'exit', 'name': 'Exit', 'exit_value': 100,
+                            'type': NodeSpec.INPUT, 'code': 'input', 'name': 'Input'
+                        }, {
+                            'type': NodeSpec.EXIT, 'code': 'exit', 'name': 'Exit', 'exit_value': 101,
                         }, {
                             'type': NodeSpec.CANCEL, 'code': 'cancel', 'name': 'Cancel',
                         }],
                         'transitions': [{
-                            'origin': 'origin', 'destination': 'exit', 'name': 'Initial transition',
-                            'permission': 'sample.start_task',
+                            'origin': 'origin', 'destination': 'input', 'name': 'Initial Transition',
+                        }, {
+                            'origin': 'input', 'destination': 'exit', 'name': 'Final Transition',
+                            'action_name': 'end'
                         }]
                     }, {
                         'code': 'bar', 'name': 'Bar',
                         'nodes': [{
                             'type': NodeSpec.ENTER, 'code': 'origin', 'name': 'Origin',
                         }, {
-                            'type': NodeSpec.EXIT, 'code': 'exit', 'name': 'Exit', 'exit_value': 100,
+                            'type': NodeSpec.INPUT, 'code': 'input', 'name': 'Input'
+                        }, {
+                            'type': NodeSpec.EXIT, 'code': 'exit', 'name': 'Exit', 'exit_value': 101,
                         }, {
                             'type': NodeSpec.CANCEL, 'code': 'cancel', 'name': 'Cancel',
                         }],
                         'transitions': [{
-                            'origin': 'origin', 'destination': 'exit', 'name': 'Initial transition',
-                            'permission': 'sample.start_task',
+                            'origin': 'origin', 'destination': 'input', 'name': 'Initial Transition',
+                        }, {
+                            'origin': 'input', 'destination': 'exit', 'name': 'Final Transition',
+                            'action_name': 'end'
                         }]
                     }]}
             target_wf = Workflow.Spec.install(spec)
@@ -1446,12 +1499,17 @@ class NodeSpecTestCase(ValidationErrorWrappingTestCase):
                          'nodes': [{
                              'type': NodeSpec.ENTER, 'code': 'origin', 'name': 'Origin',
                          }, {
+                             'type': NodeSpec.INPUT, 'code': 'input', 'name': 'Input'
+                         }, {
                              'type': NodeSpec.EXIT, 'code': 'exit', 'name': 'Exit', 'exit_value': 101,
                          }, {
                              'type': NodeSpec.CANCEL, 'code': 'cancel', 'name': 'Cancel',
                          }],
                          'transitions': [{
-                             'origin': 'origin', 'destination': 'exit', 'name': 'Transition',
+                             'origin': 'origin', 'destination': 'input', 'name': 'Initial Transition',
+                         }, {
+                             'origin': 'input', 'destination': 'exit', 'name': 'Final Transition',
+                             'action_name': 'end'
                          }]
                      }]}
             target_wf2 = Workflow.Spec.install(spec2)
@@ -1910,10 +1968,10 @@ class NodeSpecTestCase(ValidationErrorWrappingTestCase):
                             'priority': 0, 'condition': 'sample.support.dummy_condition_a'
                         }, {
                             'origin': 'multiplexer', 'destination': 'exit-a', 'name': 'Choice A',
-                            'priority': 0, 'condition': 'sample.support.dummy_condition_b'
+                            'priority': 1, 'condition': 'sample.support.dummy_condition_b'
                         }, {
                             'origin': 'multiplexer', 'destination': 'exit-b', 'name': 'Choice B',
-                            'priority': 1, 'condition': 'sample.support.dummy_condition_c'
+                            'priority': 2, 'condition': 'sample.support.dummy_condition_c'
                         }]
                     }]}
             Workflow.Spec.install(spec)
@@ -1970,9 +2028,10 @@ class NodeSpecTestCase(ValidationErrorWrappingTestCase):
                             'type': NodeSpec.CANCEL, 'code': 'cancel', 'name': 'Cancel',
                         }],
                         'transitions': [{
-                            'origin': 'origin', 'destination': 'split', 'name': 'split transition',
+                            'origin': 'origin', 'destination': 'split', 'name': 'Split Transition',
                         }, {
-                            'origin': 'split', 'destination': 'multiplexer', 'name': 'multiplexer transition',
+                            'origin': 'split', 'destination': 'multiplexer', 'name': 'Multiplexer Transition',
+                            'action_name': 'go-multiplexer'
                         }, {
                             'origin': 'multiplexer', 'destination': 'exit-a', 'name': 'Choice A',
                             'priority': 0, 'condition': 'sample.support.dummy_condition_a'

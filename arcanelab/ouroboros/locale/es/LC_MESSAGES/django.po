@@ -219,10 +219,21 @@ msgid "A workflow course is expected to have at least one exit node"
 msgstr "Se espera que un curso tenga exactamente un nodo de salida"
 
 #: arcanelab/ouroboros/models.py:191
+msgid "A child workflow course is expected to have only SPLIT type calling nodes"
+msgstr "Se espera que un curso hijo tenga solamente nodos de tipo división que lo invoquen"
+
+msgid "Cannot forward-reach the following nodes in this course: %s"
+msgstr "No se puede alcanzar desde la entrada a los siguientes nodos en el curso: %s"
+
+msgid "Cannot backward-reach the following nodes in this course: %s"
+msgstr "No se puede alcanzar desde las salidas a los siguientes nodos en el curso: %s"
+
 msgid ""
-"A child workflow course is expected to have only SPLIT type calling nodes"
+"There is at least a path from the initial node reaching an exit node "
+"without inner interaction with the user. The reached exit node was: %s"
 msgstr ""
-"Se espera que un curso hijo tenga solamente nodos de tipo división que lo invoquen"
+"Existe al menos un camino desde el nodo inicial alcanzando un nodo de salida "
+"sin ninguna interacción con el usuario. El nodo de salida alcanzado fue: %s"
 
 #: arcanelab/ouroboros/models.py:208
 msgid "A course should have an empty code if, and only if, it is the root"

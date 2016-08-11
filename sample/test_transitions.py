@@ -5,6 +5,17 @@ from arcanelab.ouroboros.support import CallableReference
 from .support import ValidationErrorWrappingTestCase
 
 
+# TODO WARNING I MADE CHANGES TO THE WAY THE BRANCHES BEHAVE.
+# TODO   AT MODEL LEVEL, COURSES DO NOT ALLOW UNREACHABLE NODES AND
+# TODO   -IF BEING CHILDREN COURSES- DO NOT ALLOW AN AUTOMATIC PATH
+# TODO   FROM THE ENTER NODE TO ANY EXIT NODE, WITHOUT NODES OF TYPE
+# TODO   SPLIT OR INPUT. TESTS MUST BE CHANGED ACCORDINGLY SO THEY
+# TODO   TEST THESE VALIDATIONS AND DO NOT FAIL THEM IN THE BRANCHES
+# TODO   NOT BEING TESTED (ALSO, CERTAIN TESTS WILL CHANGE THE WAY
+# TODO   THEY FAIL, SO AN INTENSIVE CHECK MUST BE DONE). THESE CHANGES
+# TODO   IN THE TESTS MUST BE AMEND-COMMITTED
+
+
 ##########################################
 # TransitionSpec tests
 ##########################################
@@ -61,6 +72,8 @@ class TransitionSpecTestCase(ValidationErrorWrappingTestCase):
                     'nodes': [{
                         'type': NodeSpec.ENTER, 'code': 'origin', 'name': 'Origin',
                     }, {
+                        'type': NodeSpec.INPUT, 'code': 'input', 'name': 'Input'
+                    }, {
                         'type': NodeSpec.EXIT, 'code': 'exit', 'name': 'Exit', 'exit_value': 100,
                     }, {
                         'type': NodeSpec.CANCEL, 'code': 'cancel', 'name': 'Cancel',
@@ -68,14 +81,19 @@ class TransitionSpecTestCase(ValidationErrorWrappingTestCase):
                         'type': NodeSpec.JOINED, 'code': 'joined', 'name': 'Joined',
                     }],
                     'transitions': [{
-                        'origin': 'origin', 'destination': 'exit', 'name': 'Initial transition',
+                        'origin': 'origin', 'destination': 'input', 'name': 'Initial Transition',
                         'permission': 'sample.start_task',
+                    }, {
+                        'origin': 'input', 'destination': 'exit', 'name': 'Final Transition',
+                        'action_name': 'end'
                     }]
                 }, {
                     'code': 'bar', 'name': 'Bar',
                     'nodes': [{
                         'type': NodeSpec.ENTER, 'code': 'origin', 'name': 'Origin',
                     }, {
+                        'type': NodeSpec.INPUT, 'code': 'input', 'name': 'Input'
+                    }, {
                         'type': NodeSpec.EXIT, 'code': 'exit', 'name': 'Exit', 'exit_value': 100,
                     }, {
                         'type': NodeSpec.CANCEL, 'code': 'cancel', 'name': 'Cancel',
@@ -83,8 +101,11 @@ class TransitionSpecTestCase(ValidationErrorWrappingTestCase):
                         'type': NodeSpec.JOINED, 'code': 'joined', 'name': 'Joined',
                     }],
                     'transitions': [{
-                        'origin': 'origin', 'destination': 'exit', 'name': 'Initial transition',
+                        'origin': 'origin', 'destination': 'input', 'name': 'Initial Transition',
                         'permission': 'sample.start_task',
+                    }, {
+                        'origin': 'input', 'destination': 'exit', 'name': 'Final Transition',
+                        'action_name': 'end'
                     }]
                 }]}
         return Workflow.Spec.install(spec)

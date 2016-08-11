@@ -1,4 +1,5 @@
 from __future__ import unicode_literals
+from cantrips.iteration import items
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.db import models
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
@@ -201,6 +202,107 @@ class CourseSpec(models.Model):
                     self, _('A child workflow course is expected to have only SPLIT type calling nodes')
                 )
 
+    def _course_graph_data(self):
+        enter_node = None
+        nodes = {}
+        forward_ways = {}
+        backward_ways = {}
+        cleaned_bounds = set()
+        # preparing data
+        for node in self.node_specs.all():
+            node.clean()
+            nodes[node.code] = node.type
+            # at this point only one enter node will exist
+            if node.type == NodeSpec.ENTER:
+                enter_node = node.code
+            for outbound in node.outbounds.all():
+                # We clean the outbounds
+                if outbound.id not in cleaned_bounds:
+                    outbound.clean()
+                    cleaned_bounds.add(outbound.id)
+                forward_ways.setdefault(node.code, set()).add(outbound.destination.code)
+            for inbound in node.inbounds.all():
+                # We clean the inbounds
+                if inbound.id not in cleaned_bounds:
+                    inbound.clean()
+                    cleaned_bounds.add(inbound.id)
+                backward_ways.setdefault(node.code, set()).add(inbound.origin.code)
+        return nodes, enter_node, forward_ways, backward_ways
+
+    def _forward_traverse_check(self, forward_ways, enter_node, nodes):
+        forward_traversed = set()
+
+        def traverse_forward(code):
+            if code not in forward_traversed:
+                forward_traversed.add(code)
+                for new_code in forward_ways.get(code, []):
+                    traverse_forward(new_code)
+        traverse_forward(enter_node)
+
+        # check if at least one (not being enter, cancel, joined) node was not traversed forward.
+        forward_expected_nodes = {k for (k, v) in items(nodes)
+                                  if v not in (NodeSpec.ENTER, NodeSpec.CANCEL, NodeSpec.JOINED)}
+        forward_isolated_nodes = forward_expected_nodes - forward_traversed
+        if forward_isolated_nodes:
+            detail = ', '.join(forward_isolated_nodes)
+            raise exceptions.WorkflowCourseSpecHasUnreachableNodesByEnter(
+                self, _('Cannot forward-reach the following nodes in this course: %s') % detail
+            )
+
+    def _backward_traverse_check(self, backward_ways, nodes):
+        backward_traversed = set()
+
+        def traverse_backward(code):
+            if code not in backward_traversed:
+                backward_traversed.add(code)
+                for new_code in backward_ways.get(code, []):
+                    traverse_backward(new_code)
+        for code, type_ in items(nodes):
+            if type_ == NodeSpec.EXIT:
+                traverse_backward(code)
+
+        # check if at least one (not being exit, cancel, joined) node was not traversed.
+        backward_expected_nodes = {k for (k, v) in items(nodes)
+                                   if v not in (NodeSpec.EXIT, NodeSpec.CANCEL, NodeSpec.JOINED)}
+        backward_isolated_nodes = backward_expected_nodes - backward_traversed
+        if backward_isolated_nodes:
+            detail = ', '.join(backward_isolated_nodes)
+            raise exceptions.WorkflowCourseSpecHasUnreachableNodesByExit(
+                self, _('Cannot backward-reach the following nodes in this course: %s') % detail
+            )
+
+    def _forbid_automatic_path(self, forward_ways, enter_node, nodes):
+        forward_traversed = set()
+
+        def traverse_forward(code):
+            if code not in forward_traversed:
+                forward_traversed.add(code)
+                for new_code in forward_ways.get(code, []):
+                    if nodes[new_code] not in (NodeSpec.SPLIT, NodeSpec.INPUT):
+                        if nodes[new_code] == NodeSpec.EXIT:
+                            raise exceptions.WorkflowCourseSpecHasAutomaticPath(
+                                self, _('There is at least a path from the initial node reaching an exit node '
+                                        'without inner interaction with the user. The reached exit node was: %s') %
+                                        new_code
+                            )
+                        else:
+                            traverse_forward(new_code)
+        traverse_forward(enter_node)
+
+    def verify_reach_and_not_automatic_paths(self):
+        # obtaining graph data
+        nodes, enter_node, forward_ways, backward_ways = self._course_graph_data()
+
+        # running forward check. we start from the existing enter node.
+        self._forward_traverse_check(forward_ways, enter_node, nodes)
+
+        # running backward check. we start from each of the existing exit nodes.
+        self._backward_traverse_check(backward_ways, nodes)
+
+        if self.callers.exists():
+            # forbidding automatic paths from enter to exit, with no inner SPLIT or INPUT
+            self._forbid_automatic_path(forward_ways, enter_node, nodes)
+
     def clean(self):
         """
         A course must validate by having:
@@ -214,6 +316,7 @@ class CourseSpec(models.Model):
             self.verify_has_cancel_node()
             self.verify_has_exit_nodes()
             self.verify_hierarchy()
+            self.verify_reach_and_not_automatic_paths()
             if (self.code == '') == (self.callers.exists()):
                 raise ValidationError(_('A course should have an empty code if, and only if, it is the root'))
 
