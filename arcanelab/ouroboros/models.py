@@ -248,7 +248,8 @@ class NodeSpec(models.Model):
         (SPLIT, _('Split'))
     )
 
-    type = models.CharField(max_length=15, null=False, blank=False, verbose_name=_('Type'), help_text=_('Node type'))
+    type = models.CharField(max_length=15, null=False, blank=False, choices=TYPES,
+                            verbose_name=_('Type'), help_text=_('Node type'))
     course_spec = models.ForeignKey(CourseSpec, null=False, blank=False, on_delete=models.CASCADE,
                                     related_name='node_specs', verbose_name=_('Course Spec'),
                                     help_text=_('Course spec this node spec belongs to'))

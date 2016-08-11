@@ -60,7 +60,10 @@ class Migration(migrations.Migration):
             name='NodeSpec',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('type', models.CharField(help_text='Node type', max_length=15, verbose_name='Type')),
+                ('type', models.CharField(choices=[('enter', 'Enter'), ('exit', 'Exit'), ('cancel', 'Cancel'),
+                                                   ('joined', 'Joined'), ('input', 'Input'), ('step', 'Step'),
+                                                   ('multiplexer', 'Multiplexer'), ('split', 'Split')],
+                                          help_text='Node type', max_length=15, verbose_name='Type')),
                 ('code', models.SlugField(help_text='Internal (unique) code', max_length=20, verbose_name='Code')),
                 ('name', models.CharField(max_length=60, verbose_name='Name')),
                 ('description', models.TextField(max_length=1023, verbose_name='Description')),
