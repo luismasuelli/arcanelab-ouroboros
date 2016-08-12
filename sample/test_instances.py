@@ -1,9 +1,11 @@
 from django.core.exceptions import ValidationError
+from django.contrib.auth import get_user_model
 from arcanelab.ouroboros.executors import Workflow
 from arcanelab.ouroboros.models import NodeSpec, TransitionSpec
 from arcanelab.ouroboros.support import CallableReference
 from arcanelab.ouroboros import exceptions
 from .support import ValidationErrorWrappingTestCase
+from .models import Task, Area
 
 
 class WorkflowInstanceTestCase(ValidationErrorWrappingTestCase):
@@ -184,3 +186,19 @@ class WorkflowInstanceTestCase(ValidationErrorWrappingTestCase):
                     }]
                 }]}
         return Workflow.Spec.install(spec)
+
+    def _install_users_and_area(self):
+        User = get_user_model()
+        users = [
+            User.objects.create_user('foo', 'foo@example.com', 'foo1'),
+            User.objects.create_user('bar', 'bar@example.com', 'bar1'),
+            User.objects.create_user('baz', 'baz@example.com', 'baz1'),
+            User.objects.create_user('bat', 'bat@example.com', 'bat1'),
+            User.objects.create_user('boo', 'boo@example.com', 'boo1'),
+        ]
+        area = Area.objects.create(head=users[0])
+        return users, area
+
+    def test_base_workflow(self):
+        self._base_install_workflow_spec()
+        users, area = self._install_users_and_area()
