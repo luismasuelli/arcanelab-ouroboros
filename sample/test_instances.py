@@ -37,7 +37,7 @@ class WorkflowInstanceTestCase(ValidationErrorWrappingTestCase):
                     }, {
                         'type': NodeSpec.SPLIT, 'code': 'invoice-control', 'name': 'Split Invoice/Control',
                         'description': 'Invoicing and Task Control parallel branches',
-                        'branches': ['control', 'invoice'], 'joiner': 'sample.support.approval_joiner'
+                        'branches': ['control', 'invoice'], 'joiner': 'sample.support.invoice_control_joiner'
                     }, {
                         'type': NodeSpec.MULTIPLEXER, 'code': 'service-type', 'name': 'Service Type'
                     }, {
@@ -67,9 +67,6 @@ class WorkflowInstanceTestCase(ValidationErrorWrappingTestCase):
                         'permission': 'sample.complete_task', 'action_name': 'complete'
                     }, {
                         'origin': 'completed', 'destination': 'invoice-control', 'name': 'Start I/C Split',
-                    }, {
-                        'origin': 'invoice-control', 'destination': 'reviewed', 'name': 'On Abort',
-                        'action_name': 'on-abort'
                     }, {
                         'origin': 'invoice-control', 'destination': 'started', 'name': 'On Reject',
                         'action_name': 'on-reject'
@@ -101,7 +98,7 @@ class WorkflowInstanceTestCase(ValidationErrorWrappingTestCase):
                     }, {
                         'type': NodeSpec.SPLIT, 'code': 'approve-audit', 'name': 'Split Audit/Approve',
                         'description': 'Audit and Approval parallel branches',
-                        'branches': ['approval', 'audit']
+                        'branches': ['approval', 'audit'], 'joiner': 'sample.support.approve_audit_joiner'
                     }, {
                         'type': NodeSpec.EXIT, 'code': 'was-rejected', 'name': 'Was Rejected', 'exit_value': 100,
                     }, {
@@ -112,9 +109,13 @@ class WorkflowInstanceTestCase(ValidationErrorWrappingTestCase):
                         'type': NodeSpec.JOINED, 'code': 'joined', 'name': 'Joined',
                     }],
                     'transitions': [{
-
+                        'origin': 'origin', 'destination': 'approve-audit', 'name': 'Enter A/E'
                     }, {
-
+                        'origin': 'approve-audit', 'destination': 'was-rejected', 'name': 'Rejected',
+                        'action_name': 'rejected'
+                    }, {
+                        'origin': 'approve-audit', 'destination': 'was-satisfied', 'name': 'Satisfied',
+                        'action_name': 'satisfied'
                     }]
                 }, {
                     'code': 'approval', 'name': 'Approval',
@@ -132,7 +133,15 @@ class WorkflowInstanceTestCase(ValidationErrorWrappingTestCase):
                     }, {
                         'type': NodeSpec.JOINED, 'code': 'joined', 'name': 'Joined',
                     }],
-                    'transitions': [{}]
+                    'transitions': [{
+                        'origin': 'origin', 'destination': 'pending-approval', 'name': 'Enter P/A'
+                    }, {
+                        'origin': 'pending-approval', 'destination': 'approved', 'name': 'Approve',
+                        'action_name': 'approve'
+                    }, {
+                        'origin': 'pending-approval', 'destination': 'rejected', 'name': 'Reject',
+                        'action_name': 'reject'
+                    }]
                 }, {
                     'code': 'audit', 'name': 'Audit',
                     'nodes': [{
@@ -147,7 +156,12 @@ class WorkflowInstanceTestCase(ValidationErrorWrappingTestCase):
                     }, {
                         'type': NodeSpec.JOINED, 'code': 'joined', 'name': 'Joined',
                     }],
-                    'transitions': [{}]
+                    'transitions': [{
+                        'origin': 'origin', 'destination': 'pending-audit', 'name': 'Enter Audit'
+                    }, {
+                        'origin': 'pending-audit', 'destination': 'audited', 'name': 'Audit',
+                        'action_name': 'audit'
+                    }]
                 }, {
                     'code': 'invoice', 'name': 'Invoice',
                     'nodes': [{
@@ -162,6 +176,11 @@ class WorkflowInstanceTestCase(ValidationErrorWrappingTestCase):
                     }, {
                         'type': NodeSpec.JOINED, 'code': 'joined', 'name': 'Joined',
                     }],
-                    'transitions': [{}]
+                    'transitions': [{
+                        'origin': 'origin', 'destination': 'pending-invoice', 'name': 'Enter Invoice'
+                    }, {
+                        'origin': 'pending-invoice', 'destination': 'invoiced', 'name': 'Invoice',
+                        'action_name': 'invoice'
+                    }]
                 }]}
         return Workflow.Spec.install(spec)
