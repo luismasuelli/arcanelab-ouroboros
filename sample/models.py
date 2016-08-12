@@ -47,10 +47,13 @@ class Task(Document):
     A task in a management area.
     """
 
+    SERVICE = 'service'
+    DELIVERABLE = 'deliverable'
+    NON_DELIVERABLE = 'non-deliverable'
     TYPES = (
-        ('service', 'Service'),
-        ('deliverable', 'Deliverable'),
-        ('non-deliverable', 'Non-Deliverable')
+        (SERVICE, 'Service'),
+        (DELIVERABLE, 'Deliverable'),
+        (NON_DELIVERABLE, 'Non-Deliverable')
     )
 
     area = models.ForeignKey(Area, null=False, blank=False, on_delete=models.CASCADE)
