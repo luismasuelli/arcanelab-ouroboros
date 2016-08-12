@@ -1,5 +1,6 @@
 from django.core.exceptions import ValidationError
 from django.test import TestCase
+from sample.models import Task
 
 
 def dummy_joiner(*args):
@@ -24,6 +25,36 @@ def dummy_condition_c(*args):
     # This conditions is useless. Always returns False.
     # Declared only for test (placeholder) purposes
     return None
+
+
+def approve_audit_joiner(task, branches, reached):
+    if branches.get('approval') == 102:
+        return 'rejected'
+    elif 'approval' in branches and 'audit' in branches:
+        return 'satisfied'
+    else:
+        return None
+
+
+def invoice_control_joiner(task, branches, reached):
+    if branches.get('control') == 100:
+        return 'on-reject'
+    elif 'control' in branches and 'invoice' in branches:
+        return 'on-accept'
+    else:
+        return None
+
+
+def is_deliverable(document, user):
+    return document.service_type == Task.DELIVERABLE
+
+
+def is_non_deliverable(document, user):
+    return document.service_type == Task.NON_DELIVERABLE
+
+
+def is_service(document, user):
+    return document.service_type == Task.SERVICE
 
 
 class ValidationErrorWrappingTestCase(TestCase):
