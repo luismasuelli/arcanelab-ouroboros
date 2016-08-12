@@ -488,6 +488,7 @@ class Workflow(object):
 
             course_instance = workflow_instance.courses.create(course_spec=course_spec, parent=parent)
             enter_node = course_spec.node_specs.get(type=models.NodeSpec.ENTER)
+            enter_node.full_clean()
             cls._move(course_instance, enter_node, user)
             return course_instance
 
@@ -519,24 +520,24 @@ class Workflow(object):
             if handler:
                 handler(course_instance.workflow_instance.document, user)
 
-            # Nodes of type ENTER, INPUT, EXIT, SPLIT, JOINED and CANCEL are not intermediate execution nodes but
+            # Nodes of type INPUT, EXIT, SPLIT, JOINED and CANCEL are not intermediate execution nodes but
             #   they end the advancement of a course (EXIT, JOINED and CANCEL do that permanently, while
             #   INPUT and SPLIT will continue by running other respective workflow calls).
             #
-            # Nodes of type MULTIPLEXER and STEP are temporary and so they should not be saved like that.
-            if node_spec.type in (models.NodeSpec.ENTER, models.NodeSpec.INPUT, models.NodeSpec.SPLIT,
-                                  models.NodeSpec.EXIT, models.NodeSpec.CANCEL, models.NodeSpec.JOINED):
+            # Nodes of type ENTER, MULTIPLEXER and STEP are temporary and so they should not be saved like that.
+            if node_spec.type in (models.NodeSpec.INPUT, models.NodeSpec.SPLIT, models.NodeSpec.EXIT,
+                                  models.NodeSpec.CANCEL, models.NodeSpec.JOINED):
                 try:
                     course_instance.node_instance.delete()
                 except models.NodeInstance.DoesNotExist:
                     pass
                 node_instance = models.NodeInstance.objects.create(course_instance=course_instance, node_spec=node_spec)
+                # We must log the step.
+                models.CourseInstanceLog.objects.create(user=user, course_instance=course_instance, node_spec=node_spec)
                 # For split nodes, we also need to create the pending courses as branches.
                 if node_spec.type == models.NodeSpec.SPLIT:
                     for branch in node_spec.branches.all():
                         cls._instantiate_course(course_instance.workflow_instance, branch, node_instance, user)
-                # We must log the step.
-                models.CourseInstanceLog.objects.create(user=user, course_instance=course_instance, node_spec=node_spec)
 
         @classmethod
         def _cancel(cls, course_instance, user, level=0):
@@ -799,36 +800,31 @@ class Workflow(object):
             cls.PermissionsChecker.can_instantiate_workflow(workflow_instance, user)
             workflow_instance.full_clean()
             workflow_instance.save()
-            course_spec = workflow_spec.course_specs.get(callers__isnull=True)
-            course_spec.full_clean()
-            cls.WorkflowRunner._instantiate_course(workflow_instance, workflow_spec, None, user)
             return cls(workflow_instance)
 
-    def start(self, user, path=''):
+    def start(self, user):
         """
         Starts the workflow by its main course, or searches a course and starts it.
         :param user: The user starting the course or workflow.
-        :param path: Optional path to a course in this instance.
         :return:
         """
 
         with atomic():
-            course_instance = self.CourseHelpers.find_course(self.instance.courses.get(parent__isnull=True), path)
-            if self.CourseHelpers.is_pending(course_instance):
-                course_instance.clean()
-                course_instance.course_spec.clean()
-                # Get the enter node (after clean, we are sure there will be an enter node on the spec)
-                enter_node = course_instance.course_spec.node_specs.get(type=models.NodeSpec.ENTER)
-                enter_node.full_clean()
-                # The enter_node was cleaned by the last call. We can proceed with the only outbound.
-                transition = enter_node.outbounds.get()
-                transition.clean()
-                # Now we execute the transition with our private runner.
-                self.WorkflowRunner._run_transition(course_instance, transition, user)
-            else:
-                raise exceptions.WorkflowCourseInstanceNotPending(
-                    course_instance, _('The specified course instance cannot be started because it is not pending')
+            try:
+                self.instance.courses.get(parent__isnull=True)
+                raise exceptions.WorkflowInstanceNotPending(
+                    self.instance, _('The specified course instance cannot be started because it is not pending')
                 )
+            except models.CourseSpec.DoesNotExist:
+                course_spec = self.instance.workflow_spec.course_specs.get(callers__isnull=True)
+                course_spec.full_clean()
+                course_instance = self.WorkflowRunner._instantiate_course(self.instance, course_spec, None, user)
+                # Get the enter node (after clean, we are sure there will be an enter node on the spec),
+                #   and perform a move to it.
+                enter_node = course_spec.node_specs.get(type=models.NodeSpec.ENTER)
+                transition = enter_node.outbounds.get()
+                transition.full_clean()
+                self.WorkflowRunner._run_transition(course_instance, transition, user)
 
     def execute(self, user, action_name, path=''):
         """

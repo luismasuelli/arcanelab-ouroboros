@@ -325,6 +325,10 @@ class WorkflowCourseNodeTransitionDoesNotExist(WorkflowNoSuchElement):
 # WorkflowExecutionError subclasses
 
 
+class WorkflowInstanceNotPending(WorkflowExecutionError):
+    pass
+
+
 class WorkflowCourseNodeMultiplexerDidNotSatisfyAnyCondition(WorkflowExecutionError):
     pass
 
@@ -350,10 +354,6 @@ class WorkflowCourseInstanceDoesNotAllowForeignNodes(WorkflowExecutionError):
 
 
 class WorkflowCourseInstanceNotJoinable(WorkflowExecutionError):
-    pass
-
-
-class WorkflowCourseInstanceNotPending(WorkflowExecutionError):
     pass
 
 
