@@ -237,3 +237,16 @@ class WorkflowInstanceTestCase(ValidationErrorWrappingTestCase):
             instance.execute(users[6], 'assign')
             instance.execute(users[0], 'start')
             instance.execute(users[0], 'complit')  # funny enough for a typo
+
+    def test_execute_adequately_split_is_good(self):
+        workflow = self._base_install_workflow_spec()
+        users, task = self._install_users_and_data(Task.SERVICE)
+        instance = Workflow.create(users[6], workflow, task)
+        instance.start(users[1])
+        instance.execute(users[1], 'review')
+        instance.execute(users[6], 'assign')
+        instance.execute(users[0], 'start')
+        instance.execute(users[0], 'complete')
+        self.assertEquals(instance.get_available_actions(),
+                          {'': 'splitting', 'control': 'splitting', 'invoice': ['invoice'],
+                           'control.approval': ['approve', 'reject'], 'control.audit': ['audit']})

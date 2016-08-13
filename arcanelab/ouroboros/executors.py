@@ -320,20 +320,15 @@ class Workflow(object):
             - The course instance is starting and trying to execute the only transition
               from the only starting node: the user satisfies the transition's permission
               (if any).
-            - The user is standing on a different node (not ENTER, not INPUT): this is
-              always a failure. There will never be an allowance in this point.
-
-            This method will be called when an explicit call to start or advance a
-              workflow is performed. This means that multiplexer nodes or step nodes
-              which are hit as intermediate steps of an execution will not call this
-              method for their transitions.
+            - The user is standing on a different node (not ENTER, not INPUT): we ignore
+              this case.
             """
 
             document = course_instance.workflow_instance.document
 
-            # The node is INPUT, ENTER or a type we should not allow.
+            # The node is INPUT, ENTER or a type we ignore (this method is )
             if node_spec.type not in (models.NodeSpec.INPUT, models.NodeSpec.ENTER):
-                raise exceptions.WorkflowCourseAdvanceDeniedByWrongNodeType(course_instance)
+                return
             elif node_spec.type == models.NodeSpec.INPUT:
                 node_permission = node_spec.execute_permission
                 if node_permission and not user.has_perm(node_permission, document):
@@ -481,6 +476,9 @@ class Workflow(object):
             enter_node = course_spec.node_specs.get(type=models.NodeSpec.ENTER)
             enter_node.full_clean()
             cls._move(course_instance, enter_node, user)
+            transition = enter_node.outbounds.get()
+            transition.full_clean()
+            cls._run_transition(course_instance, transition, user)
             return course_instance
 
         @classmethod
@@ -810,12 +808,6 @@ class Workflow(object):
                 course_spec = self.instance.workflow_spec.course_specs.get(callers__isnull=True)
                 course_spec.full_clean()
                 course_instance = self.WorkflowRunner._instantiate_course(self.instance, course_spec, None, user)
-                # Get the enter node (after clean, we are sure there will be an enter node on the spec),
-                #   and perform a move to it.
-                enter_node = course_spec.node_specs.get(type=models.NodeSpec.ENTER)
-                transition = enter_node.outbounds.get()
-                transition.full_clean()
-                self.WorkflowRunner._run_transition(course_instance, transition, user)
 
     def execute(self, user, action_name, path=''):
         """
@@ -905,14 +897,14 @@ class Workflow(object):
                 # Splits do not have available actions on their own.
                 # They can only continue traversal on their children
                 #   branches.
-                code = course_instance.course_spec.code
                 result[path] = 'splitting'
-                new_path = code if not path else "%s.%s" % (path, code)
                 for branch in course_instance.node_instance.branches.all():
+                    code = branch.course_spec.code
+                    new_path = code if not path else "%s.%s" % (path, code)
                     traverse_actions(branch, new_path)
             elif self.CourseHelpers.is_waiting(course_instance):
                 # Waiting courses will enumerate actions by their transitions.
-                result[path] = list(course_instance.node_instance.outbounds.all().values_list('action_name', flat=True))
+                result[path] = list(course_instance.node_instance.node_spec.outbounds.all().values_list('action_name', flat=True))
             elif self.CourseHelpers.is_cancelled(course_instance):
                 result[path] = 'cancelled'
             elif self.CourseHelpers.is_ended(course_instance):

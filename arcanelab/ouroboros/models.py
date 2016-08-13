@@ -720,7 +720,8 @@ class CourseInstance(TrackedLive):
         exceptions.ensure(lambda obj: obj.course_spec.workflow_spec == obj.workflow_instance.workflow_spec, self,
                           _('Referenced course and instance do not refer the same workflow'),
                           exceptions.WorkflowCourseInstanceInconsistent)
-        exceptions.ensure(lambda obj: not obj.parent or obj.parent.course_instance.course_spec in self.course_spec.callers.all(),
+        exceptions.ensure(lambda obj: not obj.parent or obj.parent.course_instance.course_spec in
+                          [caller.course_spec for caller in obj.course_spec.callers.select_related('course_spec')],
                           self, _('Referenced course and parent node instance\'s course are not the same'),
                           exceptions.WorkflowCourseInstanceInconsistent)
         try:
