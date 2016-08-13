@@ -310,7 +310,7 @@ class Workflow(object):
                 raise exceptions.WorkflowCourseCancelDeniedByCourse(course_instance)
 
         @classmethod
-        def can_advance_course(cls, course_instance, transition, user):
+        def can_advance_course(cls, course_instance, node_spec, transition, user):
             """
             Verifies the user can advance a course instance, given the instance and user.
             This check involves several cases:
@@ -329,23 +329,18 @@ class Workflow(object):
               method for their transitions.
             """
 
-            document = course_instance.course_spec.workflow_spec
-            try:
-                node_instance = course_instance.node_instance
-                # Reached this point, the node is either ENTER, INPUT or a type we should not allow.
-                if node_instance.node_spec.type not in (models.NodeSpec.INPUT, models.NodeSpec.ENTER):
-                    raise exceptions.WorkflowCourseAdvanceDeniedByWrongNodeType(course_instance)
-                else:
-                    if node_instance.node_spec.type == models.NodeSpec.INPUT:
-                        node_permission = node_instance.node_spec.execute_permission
-                        if node_permission and not user.has_perm(node_permission, document):
-                            raise exceptions.WorkflowCourseAdvanceDeniedByNode(course_instance)
-                    transition_permission = transition.permission
-                    if transition_permission and not user.has_perm(transition_permission, document):
-                        raise exceptions.WorkflowCourseAdvanceDeniedByTransition(course_instance)
-            except models.NodeInstance.DoesNotExist:
-                # Reached this point, the workflow course is in an empty state - wrong.
+            document = course_instance.workflow_instance.document
+
+            # The node is INPUT, ENTER or a type we should not allow.
+            if node_spec.type not in (models.NodeSpec.INPUT, models.NodeSpec.ENTER):
                 raise exceptions.WorkflowCourseAdvanceDeniedByWrongNodeType(course_instance)
+            elif node_spec.type == models.NodeSpec.INPUT:
+                node_permission = node_spec.execute_permission
+                if node_permission and not user.has_perm(node_permission, document):
+                    raise exceptions.WorkflowCourseAdvanceDeniedByNode(course_instance)
+            transition_permission = transition.permission
+            if transition_permission and not user.has_perm(transition_permission, document):
+                raise exceptions.WorkflowCourseAdvanceDeniedByTransition(course_instance)
 
     class CourseHelpers(object):
         """
@@ -368,7 +363,7 @@ class Workflow(object):
             """
 
             try:
-                return (course_instance.node_instance.node.type in iterable(types)) ^ bool(invert)
+                return (course_instance.node_instance.node_spec.type in iterable(types)) ^ bool(invert)
             except models.NodeInstance.DoesNotExist:
                 return bool(invert)
 
@@ -378,23 +373,23 @@ class Workflow(object):
 
         @classmethod
         def is_waiting(cls, course_instance):
-            return cls._check_status(course_instance, models.NodeSpec.INPUT)
+            return cls._check_status(course_instance, (models.NodeSpec.INPUT,))
 
         @classmethod
         def is_cancelled(cls, course_instance):
-            return cls._check_status(course_instance, models.NodeSpec.CANCEL)
+            return cls._check_status(course_instance, (models.NodeSpec.CANCEL,))
 
         @classmethod
         def is_ended(cls, course_instance):
-            return cls._check_status(course_instance, models.NodeSpec.EXIT)
+            return cls._check_status(course_instance, (models.NodeSpec.EXIT,))
 
         @classmethod
         def is_splitting(cls, course_instance):
-            return cls._check_status(course_instance, models.NodeSpec.SPLIT)
+            return cls._check_status(course_instance, (models.NodeSpec.SPLIT,))
 
         @classmethod
         def is_joined(cls, course_instance):
-            return cls._check_status(course_instance, models.NodeSpec.JOINED)
+            return cls._check_status(course_instance, (models.NodeSpec.JOINED,))
 
         @classmethod
         def is_terminated(cls, course_instance):
@@ -504,7 +499,7 @@ class Workflow(object):
                 except models.NodeSpec.DoesNotExist:
                     raise exceptions.WorkflowCourseNodeDoesNotExist(course_instance, node)
             else:
-                if node.course != course_instance.course_spec:
+                if node.course_spec != course_instance.course_spec:
                     raise exceptions.WorkflowCourseInstanceDoesNotAllowForeignNodes(course_instance, node)
                 node_spec = node
 
@@ -611,7 +606,7 @@ class Workflow(object):
             course_spec.clean()
 
             # Check if we have permission to do this
-            Workflow.PermissionsChecker.can_advance_course(course_instance, transition, user)
+            Workflow.PermissionsChecker.can_advance_course(course_instance, origin, transition, user)
 
             # We move to the destination node
             cls._move(course_instance, destination, user)
@@ -811,7 +806,7 @@ class Workflow(object):
                 raise exceptions.WorkflowInstanceNotPending(
                     self.instance, _('The specified course instance cannot be started because it is not pending')
                 )
-            except models.CourseSpec.DoesNotExist:
+            except models.CourseInstance.DoesNotExist:
                 course_spec = self.instance.workflow_spec.course_specs.get(callers__isnull=True)
                 course_spec.full_clean()
                 course_instance = self.WorkflowRunner._instantiate_course(self.instance, course_spec, None, user)
@@ -852,7 +847,7 @@ class Workflow(object):
                     )
                 # We get the transition or fail with non-existence
                 try:
-                    transition = transitions.get(action_name)
+                    transition = transitions.get(action_name=action_name)
                 except models.TransitionSpec.DoesNotExist:
                     raise exceptions.WorkflowCourseNodeTransitionDoesNotExist(node_spec, action_name)
                 # We clean the transition
