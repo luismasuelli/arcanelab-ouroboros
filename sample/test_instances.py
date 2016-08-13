@@ -201,8 +201,9 @@ class WorkflowInstanceTestCase(ValidationErrorWrappingTestCase):
             User.objects.create_user('bat', 'bat@example.com', 'bat1'),
             User.objects.create_user('boo', 'boo@example.com', 'boo1'),
             User.objects.create_user('poo', 'poo@example.com', 'poo1'),
+            User.objects.create_user('god', 'god@example.com', 'god1'),
         ]
-        area = Area.objects.create(head=users[0])
+        area = Area.objects.create(head=users[6])
         task = Task.objects.create(area=area, service_type=service_type, title='Sample',
                                    content='Lorem ipsum dolor sit amet', performer=users[0], reviewer=users[1],
                                    accountant=users[2], auditor=users[3], dispatcher=users[4], attendant=users[5])
@@ -221,7 +222,18 @@ class WorkflowInstanceTestCase(ValidationErrorWrappingTestCase):
     def test_user_not_able_to_execute_action_is_bad(self):
         workflow = self._base_install_workflow_spec()
         users, task = self._install_users_and_data(Task.SERVICE)
-        instance = Workflow.create(users[0], workflow, task)
+        instance = Workflow.create(users[6], workflow, task)
         instance.start(users[1])
         with self.assertRaises(exceptions.WorkflowActionDenied):
             instance.execute(users[2], 'review')
+
+    def test_execute_invalid_action_is_bad(self):
+        workflow = self._base_install_workflow_spec()
+        users, task = self._install_users_and_data(Task.SERVICE)
+        instance = Workflow.create(users[6], workflow, task)
+        instance.start(users[1])
+        with self.assertRaises(exceptions.WorkflowCourseNodeTransitionDoesNotExist):
+            instance.execute(users[1], 'review')
+            instance.execute(users[6], 'assign')
+            instance.execute(users[0], 'start')
+            instance.execute(users[0], 'complit')  # funny enough for a typo
