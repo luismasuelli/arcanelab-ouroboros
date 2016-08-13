@@ -377,10 +377,6 @@ class Workflow(object):
             return cls._check_status(course_instance, (), True)
 
         @classmethod
-        def is_pending(cls, course_instance):
-            return cls._check_status(course_instance, models.NodeSpec.ENTER)
-
-        @classmethod
         def is_waiting(cls, course_instance):
             return cls._check_status(course_instance, models.NodeSpec.INPUT)
 
@@ -900,7 +896,7 @@ class Workflow(object):
         """
         Get all the available actions for the courses in this workflow. For nodes
         :return: A dictionary with 'course.path' => (
-            'pending' | 'splitting' | 'cancelled' | 'ended' | ['list', 'of', 'available', 'actions']
+            'splitting' | 'cancelled' | 'ended' | ['list', 'of', 'available', 'actions']
         )
         """
 
@@ -919,10 +915,6 @@ class Workflow(object):
                 new_path = code if not path else "%s.%s" % (path, code)
                 for branch in course_instance.node_instance.branches.all():
                     traverse_actions(branch, new_path)
-            elif self.CourseHelpers.is_pending(course_instance):
-                # Marking path => 'pending' means that the course is not even
-                #   started yet, but it is available to be started.
-                result[path] = 'pending'
             elif self.CourseHelpers.is_waiting(course_instance):
                 # Waiting courses will enumerate actions by their transitions.
                 result[path] = list(course_instance.node_instance.outbounds.all().values_list('action_name', flat=True))
