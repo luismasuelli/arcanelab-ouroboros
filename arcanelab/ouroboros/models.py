@@ -717,14 +717,14 @@ class CourseInstance(TrackedLive):
     term_level = models.PositiveIntegerField(null=True, blank=True)
 
     def verify_consistency(self):
-        exceptions.ensure(lambda obj: obj.course_spec.workflow_spec != obj.workflow_instance.workflow_spec, self,
+        exceptions.ensure(lambda obj: obj.course_spec.workflow_spec == obj.workflow_instance.workflow_spec, self,
                           _('Referenced course and instance do not refer the same workflow'),
                           exceptions.WorkflowCourseInstanceInconsistent)
-        exceptions.ensure(lambda obj: obj.parent and obj.parent.course_instance.course_spec not in self.course_spec.callers.all(),
+        exceptions.ensure(lambda obj: not obj.parent or obj.parent.course_instance.course_spec in self.course_spec.callers.all(),
                           self, _('Referenced course and parent node instance\'s course are not the same'),
                           exceptions.WorkflowCourseInstanceInconsistent)
         try:
-            self.node_instance.verify_consistent_course()
+            self.node_instance.verify_consistency()
         except ObjectDoesNotExist:
             pass
 
@@ -748,7 +748,7 @@ class NodeInstance(TrackedLive):
     node_spec = models.ForeignKey(NodeSpec, related_name='+', null=False, blank=False)
 
     def verify_consistency(self):
-        exceptions.ensure(lambda obj: obj.node_spec.course_spec != obj.course_instance.course_spec, self,
+        exceptions.ensure(lambda obj: obj.node_spec.course_spec == obj.course_instance.course_spec, self,
                           _('Referenced node and course instance do not refer the same course'),
                           exceptions.WorkflowCourseNodeInstanceInconsistent)
 
