@@ -22,7 +22,10 @@ class WorkflowInstanceTestCase(ValidationErrorWrappingTestCase):
                 'courses': [{
                     'code': '', 'name': 'Main',
                     'nodes': [{
-                        'type': NodeSpec.ENTER, 'code': 'created', 'name': 'Created',
+                        'type': NodeSpec.ENTER, 'code': 'origin', 'name': 'Origin',
+                        'description': 'Origin',
+                    }, {
+                        'type': NodeSpec.INPUT, 'code': 'created', 'name': 'Created',
                         'description': 'The task was just created at this point. Yet to review',
                     }, {
                         'type': NodeSpec.INPUT, 'code': 'reviewed', 'name': 'Reviewed',
@@ -56,8 +59,10 @@ class WorkflowInstanceTestCase(ValidationErrorWrappingTestCase):
                         'type': NodeSpec.CANCEL, 'code': 'cancel', 'name': 'Cancel',
                     }],
                     'transitions': [{
+                        'origin': 'origin', 'destination': 'created', 'name': 'Enter Created',
+                    }, {
                         'origin': 'created', 'destination': 'reviewed', 'name': 'Review',
-                        'permission': 'sample.review_task'
+                        'permission': 'sample.review_task', 'action_name': 'review'
                     }, {
                         'origin': 'reviewed', 'destination': 'assigned', 'name': 'Assign',
                         'permission': 'sample.create_task', 'action_name': 'assign'
@@ -200,8 +205,7 @@ class WorkflowInstanceTestCase(ValidationErrorWrappingTestCase):
         area = Area.objects.create(head=users[0])
         task = Task.objects.create(area=area, service_type=service_type, title='Sample',
                                    content='Lorem ipsum dolor sit amet', performer=users[0], reviewer=users[1],
-                                   accountant=users[2], auditor=users[3], dispatcher=users[4],
-                                   attendant=users[5])
+                                   accountant=users[2], auditor=users[3], dispatcher=users[4], attendant=users[5])
         return users, task
 
     def test_base_workflow(self):
@@ -213,3 +217,11 @@ class WorkflowInstanceTestCase(ValidationErrorWrappingTestCase):
         users, task = self._install_users_and_data(Task.SERVICE)
         with self.assertRaises(exceptions.WorkflowCreateDenied):
             Workflow.create(users[1], workflow, task)
+
+    def test_user_not_able_to_execute_action_is_bad(self):
+        workflow = self._base_install_workflow_spec()
+        users, task = self._install_users_and_data(Task.SERVICE)
+        instance = Workflow.create(users[0], workflow, task)
+        instance.start(users[1])
+        with self.assertRaises(exceptions.WorkflowActionDenied):
+            instance.execute(users[2], 'review')
