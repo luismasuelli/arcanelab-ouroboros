@@ -187,7 +187,7 @@ class WorkflowInstanceTestCase(ValidationErrorWrappingTestCase):
                 }]}
         return Workflow.Spec.install(spec)
 
-    def _install_users_and_area(self):
+    def _install_users_and_data(self, service_type):
         User = get_user_model()
         users = [
             User.objects.create_user('foo', 'foo@example.com', 'foo1'),
@@ -195,10 +195,15 @@ class WorkflowInstanceTestCase(ValidationErrorWrappingTestCase):
             User.objects.create_user('baz', 'baz@example.com', 'baz1'),
             User.objects.create_user('bat', 'bat@example.com', 'bat1'),
             User.objects.create_user('boo', 'boo@example.com', 'boo1'),
+            User.objects.create_user('poo', 'poo@example.com', 'poo1'),
         ]
         area = Area.objects.create(head=users[0])
-        return users, area
+        task = Task.objects.create(area=area, service_type=service_type, title='Sample',
+                                   content='Lorem ipsum dolor sit amet', performer=users[0], reviewer=users[1],
+                                   accountant=users[2], auditor=users[3], dispatcher=users[4],
+                                   attendant=users[5])
+        return users, task
 
     def test_base_workflow(self):
         self._base_install_workflow_spec()
-        users, area = self._install_users_and_area()
+        users, task = self._install_users_and_data(Task.SERVICE)
