@@ -673,15 +673,19 @@ class WorkflowInstance(TrackedLive):
         except ObjectDoesNotExist:
             pass
 
-    def verify_exactly_one_parent_course(self):
+    def verify_at_most_one_parent_course(self):
         try:
             self.courses.get(parent__isnull=True)
         except CourseInstance.DoesNotExist:
-            raise exceptions.WorkflowInstanceHasNoMainCourse(self, _('No main course is present for the workflow '
-                                                                     'instance (expected one)'))
+            # This code does not apply anymore, since a workflow instance with no main course is just a pending
+            #   workflow instance
+            #
+            # raise exceptions.WorkflowInstanceHasNoMainCourse(self, _('No main course is present for the workflow '
+            #                                                          'instance (expected one)'))
+            pass
         except CourseInstance.MultipleObjectsReturned:
-            raise exceptions.WorkflowInstanceHasNoMainCourse(self, _('Multiple main courses are present for the '
-                                                                     'workflow instance (expected one)'))
+            raise exceptions.WorkflowInstanceHasMultipleMainCourses(self, _('Multiple main courses are present for the '
+                                                                            'workflow instance (expected one)'))
 
     def clean(self, keep=True):
         """
@@ -690,7 +694,7 @@ class WorkflowInstance(TrackedLive):
 
         self.verify_accepts_document()
         if self.pk:
-            self.verify_exactly_one_parent_course()
+            self.verify_at_most_one_parent_course()
 
     class Meta:
         unique_together = ('content_type', 'object_id')
