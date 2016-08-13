@@ -205,5 +205,11 @@ class WorkflowInstanceTestCase(ValidationErrorWrappingTestCase):
         return users, task
 
     def test_base_workflow(self):
-        self._base_install_workflow_spec()
+        workflow = self._base_install_workflow_spec()
         users, task = self._install_users_and_data(Task.SERVICE)
+
+    def test_user_not_able_to_create_is_bad(self):
+        workflow = self._base_install_workflow_spec()
+        users, task = self._install_users_and_data(Task.SERVICE)
+        with self.assertRaises(exceptions.WorkflowCreateDenied):
+            Workflow.create(users[1], workflow, task)
