@@ -248,8 +248,7 @@ class WorkflowInstanceTestCase(ValidationErrorWrappingTestCase):
         instance.execute(users[0], 'start')
         instance.execute(users[0], 'complete')
         self.assertEquals(instance.get_available_actions(),
-                          {'': 'splitting', 'control': 'splitting', 'invoice': ['invoice'],
-                           'control.approval': ['approve', 'reject'], 'control.audit': ['audit']})
+                          {'invoice': ['invoice'], 'control.approval': ['approve', 'reject'], 'control.audit': ['audit']})
 
     # TODO ensure we test both joiner-split break and non-joiner-split break
     # TODO ensure we test both approve and reject

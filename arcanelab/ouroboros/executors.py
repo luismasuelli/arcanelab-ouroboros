@@ -310,7 +310,7 @@ class Workflow(object):
                 raise exceptions.WorkflowCourseCancelDeniedByCourse(course_instance)
 
         @classmethod
-        def can_advance_course(cls, course_instance, node_spec, transition, user):
+        def can_advance_course(cls, course_instance, transition, user):
             """
             Verifies the user can advance a course instance, given the instance and user.
             This check involves several cases:
@@ -325,6 +325,7 @@ class Workflow(object):
             """
 
             document = course_instance.workflow_instance.document
+            node_spec = transition.origin
 
             # The node is INPUT, ENTER or a type we ignore (this method is )
             if node_spec.type not in (models.NodeSpec.INPUT, models.NodeSpec.ENTER):
@@ -604,7 +605,7 @@ class Workflow(object):
             course_spec.clean()
 
             # Check if we have permission to do this
-            Workflow.PermissionsChecker.can_advance_course(course_instance, origin, transition, user)
+            Workflow.PermissionsChecker.can_advance_course(course_instance, transition, user)
 
             # We move to the destination node
             cls._move(course_instance, destination, user)
@@ -897,7 +898,6 @@ class Workflow(object):
                 # Splits do not have available actions on their own.
                 # They can only continue traversal on their children
                 #   branches.
-                result[path] = 'splitting'
                 for branch in course_instance.node_instance.branches.all():
                     code = branch.course_spec.code
                     new_path = code if not path else "%s.%s" % (path, code)
@@ -905,10 +905,6 @@ class Workflow(object):
             elif self.CourseHelpers.is_waiting(course_instance):
                 # Waiting courses will enumerate actions by their transitions.
                 result[path] = list(course_instance.node_instance.node_spec.outbounds.all().values_list('action_name', flat=True))
-            elif self.CourseHelpers.is_cancelled(course_instance):
-                result[path] = 'cancelled'
-            elif self.CourseHelpers.is_ended(course_instance):
-                result[path] = 'ended'
             # NOTES: joined courses will NEVER be listed since they exist for
             #   just a moment.
 
