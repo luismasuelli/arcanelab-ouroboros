@@ -1,5 +1,7 @@
+from __future__ import unicode_literals
 from django.core.exceptions import ValidationError
 from django.contrib.auth import get_user_model
+from django.utils.translation import ugettext_lazy as _
 from arcanelab.ouroboros.executors import Workflow
 from arcanelab.ouroboros.models import NodeSpec, TransitionSpec
 from arcanelab.ouroboros.support import CallableReference
@@ -144,10 +146,10 @@ class WorkflowInstanceTestCase(ValidationErrorWrappingTestCase):
                         'origin': 'origin', 'destination': 'pending-approval', 'name': 'Enter P/A'
                     }, {
                         'origin': 'pending-approval', 'destination': 'approved', 'name': 'Approve',
-                        'action_name': 'approve'
+                        'action_name': 'approve', 'permission': 'sample.accept_task'
                     }, {
                         'origin': 'pending-approval', 'destination': 'rejected', 'name': 'Reject',
-                        'action_name': 'reject'
+                        'action_name': 'reject', 'permission': 'sample.reject_task'
                     }]
                 }, {
                     'code': 'audit', 'name': 'Audit',
@@ -167,7 +169,7 @@ class WorkflowInstanceTestCase(ValidationErrorWrappingTestCase):
                         'origin': 'origin', 'destination': 'pending-audit', 'name': 'Enter Audit'
                     }, {
                         'origin': 'pending-audit', 'destination': 'audited', 'name': 'Audit',
-                        'action_name': 'audit'
+                        'action_name': 'audit', 'permission': 'sample.audit_task'
                     }]
                 }, {
                     'code': 'invoice', 'name': 'Invoice',
@@ -187,7 +189,7 @@ class WorkflowInstanceTestCase(ValidationErrorWrappingTestCase):
                         'origin': 'origin', 'destination': 'pending-invoice', 'name': 'Enter Invoice'
                     }, {
                         'origin': 'pending-invoice', 'destination': 'invoiced', 'name': 'Invoice',
-                        'action_name': 'invoice'
+                        'action_name': 'invoice', 'permission': 'sample.invoice_task'
                     }]
                 }]}
         return Workflow.Spec.install(spec)
@@ -247,8 +249,17 @@ class WorkflowInstanceTestCase(ValidationErrorWrappingTestCase):
         instance.execute(users[6], 'assign')
         instance.execute(users[0], 'start')
         instance.execute(users[0], 'complete')
-        self.assertEquals(instance.get_available_actions(),
-                          {'invoice': ['invoice'], 'control.approval': ['approve', 'reject'], 'control.audit': ['audit']})
+        actions = instance.get_workflow_available_actions(users[2])
+        target = {
+            'invoice': {
+                'display_name': _('Invoice'),
+                'actions': [{
+                    'display_name': _('Invoice'),
+                    'action_name': 'invoice'
+                }]
+            },
+        }
+        self.assertTrue(actions == target, "expected %r == %r" % (actions, target))
 
     # TODO ensure we test both joiner-split break and non-joiner-split break
     # TODO ensure we test both approve and reject

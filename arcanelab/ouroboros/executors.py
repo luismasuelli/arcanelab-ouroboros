@@ -310,6 +310,39 @@ class Workflow(object):
                 raise exceptions.WorkflowCourseCancelDeniedByCourse(course_instance)
 
         @classmethod
+        def course_available_actions(cls, course_instance, user):
+            """
+            Returns the available actions given a course instance, for a
+              specific user.
+            :return: None, if the associated course spec has a permission
+              the user does not satisfy (or if there is no INPUT node).
+              Otherwise, a possibly empty list, filled with the available
+              actions (i.e. actions without required permission or actions
+              with a permission the user satisfies; outbounds without an
+              action name will also be discarded).
+            """
+
+            try:
+                node_spec = course_instance.node_instance.node_spec
+                document = course_instance.workflow_instance.document
+                if node_spec.type != models.NodeSpec.INPUT:
+                    return None
+                if node_spec.execute_permission and not user.has_perm(node_spec.execute_permission, document):
+                    return None
+                results = []
+                for transition in node_spec.outbounds.all():
+                    action_name = transition.action_name
+                    permission = transition.permission
+                    if action_name and (not permission or user.has_perm(permission, document)):
+                        results.append({
+                            'action_name': action_name,
+                            'display_name': transition.display_name
+                        })
+                return results
+            except models.NodeInstance.DoesNotExist:
+                return None
+
+        @classmethod
         def can_advance_course(cls, course_instance, transition, user):
             """
             Verifies the user can advance a course instance, given the instance and user.
@@ -880,12 +913,24 @@ class Workflow(object):
                 parent_course_instance.clean()
                 self.WorkflowRunner._test_split_branch_reached(parent_course_instance, user, course_instance)
 
-    def get_available_actions(self):
+    def get_workflow_available_actions(self, user):
         """
-        Get all the available actions for the courses in this workflow. For nodes
-        :return: A dictionary with 'course.path' => (
-            'splitting' | 'cancelled' | 'ended' | ['list', 'of', 'available', 'actions']
-        )
+        Get all the waiting courses metadata (including available actions) for the
+          courses in this workflow for a specific user.
+        :param: The given user.
+        :return: A dictionary with 'course.path' => {'display_name': _('Course Name'), 'actions': [{
+            'action_name': 'list',
+            'display_name': 'List'
+        }, {
+            'action_name': 'of',
+            'display_name': _('of') # i18n-enabled proxies may appear
+        }, {
+            'action_name': 'available',
+            'display_name': _('Available') # i18n-enabled proxies may appear
+        }, {
+            'action_name': 'actions',
+            'display_name': 'Actions'
+        }]}
         """
 
         self.instance.clean()
@@ -904,9 +949,9 @@ class Workflow(object):
                     traverse_actions(branch, new_path)
             elif self.CourseHelpers.is_waiting(course_instance):
                 # Waiting courses will enumerate actions by their transitions.
-                result[path] = list(course_instance.node_instance.node_spec.outbounds.all().values_list('action_name', flat=True))
-            # NOTES: joined courses will NEVER be listed since they exist for
-            #   just a moment.
+                actions = self.PermissionsChecker.course_available_actions(course_instance, user)
+                if actions:
+                    result[path] = {'display_name': course_instance.course_spec.display_name, 'actions': actions}
 
         traverse_actions(course_instance)
         return result
