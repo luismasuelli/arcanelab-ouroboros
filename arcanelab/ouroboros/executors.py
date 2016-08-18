@@ -459,14 +459,14 @@ class Workflow(object):
                     course_instance, _('Course does not have children')
                 )
             else:
-                course_instance.verify_consistent_course()
+                course_instance.verify_consistency()
                 parts = path.split('.', 1)
                 if len(parts) == 1:
                     head, tail = parts[0], ''
                 else:
                     head, tail = parts
                 try:
-                    return cls.find_course(course_instance.node.branches.get(course__code=head), tail)
+                    return cls.find_course(course_instance.node_instance.branches.get(course_spec__code=head), tail)
                 except models.NodeInstance.DoesNotExist:
                     raise exceptions.WorkflowNoSuchElement(course_instance, _('Child course does not exist'), head)
                 except models.NodeInstance.MultipleObjectsReturned:
@@ -669,7 +669,7 @@ class Workflow(object):
                 cls._run_transition(course_instance, transition, user)
             elif destination.type == models.NodeSpec.MULTIPLEXER:
                 # After cleaning destination, we know that it has more than one outbound.
-                transitions = list(destination.outbounds.order('priority').all())
+                transitions = list(destination.outbounds.order_by('priority').all())
                 # Clean all the transitions.
                 for transition in transitions:
                     transition.clean()
@@ -702,7 +702,7 @@ class Workflow(object):
             node_spec = course_instance.node_instance.node_spec
             node_spec.clean()
             joiner = node_spec.joiner
-            branches = course_instance.branches.all()
+            branches = course_instance.node_instance.branches.all()
             if not joiner:
                 # By cleaning we know we will be handling only one transition
                 transition = node_spec.outbounds.get()
@@ -716,7 +716,7 @@ class Workflow(object):
                 transitions = node_spec.outbounds.all()
                 one_transition = transitions.count() == 1
                 # We call the joiner with its arguments
-                reaching_branch_code = reaching_branch.code
+                reaching_branch_code = reaching_branch.course_spec.code
                 # Making a dictionary of branch statuses
                 branch_statuses = {branch.course_spec.code: Workflow.CourseHelpers.get_exit_code(branch)
                                    for branch in branches}
