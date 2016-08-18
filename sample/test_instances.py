@@ -324,5 +324,18 @@ class WorkflowInstanceTestCase(ValidationErrorWrappingTestCase):
         self.assertTrue(workflow_status == target, "expected %r == %r" % (workflow_status, target))
         self.assertEqual(instance.instance.document.content, 'Lorem ipsum dolor sit amet Pending Delivery')
 
-    # TODO ensure we test conditions appropriately
-    # (in the meantime ensure we are testing landing handlers)
+    def test_unmatched_condition_is_bad(self):
+        workflow = self._base_install_workflow_spec()
+        users, task = self._install_users_and_data('crap')
+        with self.assertRaises(exceptions.WorkflowCourseNodeMultiplexerDidNotSatisfyAnyCondition):
+            instance = Workflow.create(users[6], workflow, task)
+            instance.start(users[1])
+            instance.execute(users[1], 'review')
+            instance.execute(users[6], 'assign')
+            instance.execute(users[0], 'start')
+            instance.execute(users[0], 'complete')
+            instance.execute(users[1], 'approve', 'control.approval')
+            instance.execute(users[2], 'invoice', 'invoice')
+            instance.execute(users[3], 'audit', 'control.audit')
+            workflow_status = instance.get_workflow_status()
+            target = {'': ('waiting', 'pending-delivery')}
