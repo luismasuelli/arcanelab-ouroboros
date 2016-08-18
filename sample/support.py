@@ -57,6 +57,11 @@ def is_service(document, user):
     return document.service_type == Task.SERVICE
 
 
+def on_pending_delivery(document, user):
+    document.content += ' Pending Delivery'
+    document.save()
+
+
 class ValidationErrorWrappingTestCase(TestCase):
 
     def unwrapValidationError(self, exception, field='__all__'):
