@@ -796,7 +796,7 @@ class NodeInstance(TrackedLive):
         Cleans consistency
         """
 
-        self.verify_consistent_course()
+        self.verify_consistency()
         self.verify_respects_branches()
 
 
