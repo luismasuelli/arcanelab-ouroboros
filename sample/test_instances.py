@@ -272,6 +272,25 @@ class WorkflowInstanceTestCase(ValidationErrorWrappingTestCase):
             },
         }
         self.assertTrue(actions == target, "expected %r == %r" % (actions, target))
+        instance.execute(users[3], 'audit', 'control.audit')
+        actions = instance.get_workflow_available_actions(users[1])
+        target = {
+            'control.approval': {
+                'display_name': _('Approval'),
+                'actions': [{
+                    'display_name': _('Approve'),
+                    'action_name': 'approve'
+                }, {
+                    'display_name': _('Reject'),
+                    'action_name': 'reject'
+                }]
+            },
+        }
+        self.assertTrue(actions == target, "expected %r == %r" % (actions, target))
+        instance.execute(users[1], 'approve', 'control.approval')
+        workflow_status = instance.get_workflow_status()
+        target = {'': ('ended', 105)}
+        self.assertTrue(workflow_status == target, "expected %r == %r" % (workflow_status, target))
 
     # TODO ensure we test both joiner-split break
     # TODO ensure we test both approve and reject

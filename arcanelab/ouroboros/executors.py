@@ -913,6 +913,38 @@ class Workflow(object):
                 parent_course_instance.clean()
                 self.WorkflowRunner._test_split_branch_reached(parent_course_instance, user, course_instance)
 
+    def get_workflow_status(self):
+        """
+        Get the status of each course in the workflow.
+        :return: A dictionary with 'course.path' => ('status', code), where code is the exit code
+          (-1 for cancelled, >= 0 for exit, and None for other statuses).
+        """
+
+        self.instance.clean()
+        course_instance = self.instance.courses.get(parent__isnull=True)
+        result = {}
+
+        def traverse_actions(course_instance, path=''):
+            course_instance.clean()
+            exit_code = self.CourseHelpers.get_exit_code(course_instance)
+            if self.CourseHelpers.is_splitting(course_instance):
+                result[path] = ('splitting', exit_code)
+                for branch in course_instance.node_instance.branches.all():
+                    code = branch.course_spec.code
+                    new_path = code if not path else "%s.%s" % (path, code)
+                    traverse_actions(branch, new_path)
+            elif self.CourseHelpers.is_waiting(course_instance):
+                result[path] = ('waiting', exit_code)
+            elif self.CourseHelpers.is_cancelled(course_instance):
+                result[path] = ('cancelled', exit_code)
+            elif self.CourseHelpers.is_ended(course_instance):
+                result[path] = ('ended', exit_code)
+            elif self.CourseHelpers.is_joined(course_instance):
+                result[path] = ('joined', exit_code)
+
+        traverse_actions(course_instance)
+        return result
+
     def get_workflow_available_actions(self, user):
         """
         Get all the waiting courses metadata (including available actions) for the
