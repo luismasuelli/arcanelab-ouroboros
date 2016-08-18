@@ -292,6 +292,20 @@ class WorkflowInstanceTestCase(ValidationErrorWrappingTestCase):
         target = {'': ('ended', 105)}
         self.assertTrue(workflow_status == target, "expected %r == %r" % (workflow_status, target))
 
+    def test_rejection_and_loopback_is_good(self):
+        workflow = self._base_install_workflow_spec()
+        users, task = self._install_users_and_data(Task.SERVICE)
+        instance = Workflow.create(users[6], workflow, task)
+        instance.start(users[1])
+        instance.execute(users[1], 'review')
+        instance.execute(users[6], 'assign')
+        instance.execute(users[0], 'start')
+        instance.execute(users[0], 'complete')
+        instance.execute(users[1], 'reject', 'control.approval')
+        workflow_status = instance.get_workflow_status()
+        target = {'': ('waiting', 'started')}
+        self.assertTrue(workflow_status == target, "expected %r == %r" % (workflow_status, target))
+
     # TODO ensure we test both joiner-split break
     # TODO ensure we test both approve and reject
     # TODO ensure we test conditions appropriately

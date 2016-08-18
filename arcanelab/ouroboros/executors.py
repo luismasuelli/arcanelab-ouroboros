@@ -917,7 +917,7 @@ class Workflow(object):
         """
         Get the status of each course in the workflow.
         :return: A dictionary with 'course.path' => ('status', code), where code is the exit code
-          (-1 for cancelled, >= 0 for exit, and None for other statuses).
+          (-1 for cancelled, >= 0 for exit, a node spec's code for waiting, and None for other statuses).
         """
 
         self.instance.clean()
@@ -926,21 +926,20 @@ class Workflow(object):
 
         def traverse_actions(course_instance, path=''):
             course_instance.clean()
-            exit_code = self.CourseHelpers.get_exit_code(course_instance)
             if self.CourseHelpers.is_splitting(course_instance):
-                result[path] = ('splitting', exit_code)
+                result[path] = ('splitting', self.CourseHelpers.get_exit_code(course_instance))
                 for branch in course_instance.node_instance.branches.all():
                     code = branch.course_spec.code
                     new_path = code if not path else "%s.%s" % (path, code)
                     traverse_actions(branch, new_path)
             elif self.CourseHelpers.is_waiting(course_instance):
-                result[path] = ('waiting', exit_code)
+                result[path] = ('waiting', course_instance.node_instance.node_spec.code)
             elif self.CourseHelpers.is_cancelled(course_instance):
-                result[path] = ('cancelled', exit_code)
+                result[path] = ('cancelled', self.CourseHelpers.get_exit_code(course_instance))
             elif self.CourseHelpers.is_ended(course_instance):
-                result[path] = ('ended', exit_code)
+                result[path] = ('ended', self.CourseHelpers.get_exit_code(course_instance))
             elif self.CourseHelpers.is_joined(course_instance):
-                result[path] = ('joined', exit_code)
+                result[path] = ('joined', self.CourseHelpers.get_exit_code(course_instance))
 
         traverse_actions(course_instance)
         return result
