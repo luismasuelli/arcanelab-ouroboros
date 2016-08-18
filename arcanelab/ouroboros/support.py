@@ -20,4 +20,4 @@ class CallableReference(namedtuple('Reference', ('path',))):
         except AttributeError:
             raise TypeError('Attribute type should be a string')
 
-        return getattr(__import__(path), variable)(*args, **kwargs)
+        return getattr(__import__(path, globals(), locals(), [variable], 0), variable)(*args, **kwargs)
