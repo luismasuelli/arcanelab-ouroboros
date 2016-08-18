@@ -30,7 +30,7 @@ def dummy_condition_c(*args):
 def approve_audit_joiner(task, branches, reached):
     if branches.get('approval') == 102:
         return 'rejected'
-    elif 'approval' in branches and 'audit' in branches:
+    elif branches.get('approval') is not None and branches.get('audit') is not None:
         return 'satisfied'
     else:
         return None
@@ -39,7 +39,7 @@ def approve_audit_joiner(task, branches, reached):
 def invoice_control_joiner(task, branches, reached):
     if branches.get('control') == 100:
         return 'on-reject'
-    elif 'control' in branches and 'invoice' in branches:
+    elif branches.get('control') is not None and branches.get('invoice') is not None:
         return 'on-accept'
     else:
         return None
