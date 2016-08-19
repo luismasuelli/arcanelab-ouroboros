@@ -241,6 +241,17 @@ class WorkflowInstanceTestCase(ValidationErrorWrappingTestCase):
             instance.execute(users[0], 'start')
             instance.execute(users[0], 'complit')  # funny enough for a typo
 
+    def test_execute_invalid_course_is_bad(self):
+        workflow = self._base_install_workflow_spec()
+        users, task = self._install_users_and_data(Task.SERVICE)
+        instance = Workflow.create(users[6], workflow, task)
+        instance.start(users[1])
+        with self.assertRaises(exceptions.WorkflowCourseInstanceDoesNotExist):
+            instance.execute(users[1], 'review')
+            instance.execute(users[6], 'assign')
+            instance.execute(users[0], 'start')
+            instance.execute(users[0], 'complete', 'wtf')
+
     def test_execute_adequately_split_is_good(self):
         workflow = self._base_install_workflow_spec()
         users, task = self._install_users_and_data(Task.SERVICE)
@@ -337,5 +348,4 @@ class WorkflowInstanceTestCase(ValidationErrorWrappingTestCase):
             instance.execute(users[1], 'approve', 'control.approval')
             instance.execute(users[2], 'invoice', 'invoice')
             instance.execute(users[3], 'audit', 'control.audit')
-            workflow_status = instance.get_workflow_status()
-            target = {'': ('waiting', 'pending-delivery')}
+
