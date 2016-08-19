@@ -349,3 +349,10 @@ class WorkflowInstanceTestCase(ValidationErrorWrappingTestCase):
             instance.execute(users[2], 'invoice', 'invoice')
             instance.execute(users[3], 'audit', 'control.audit')
 
+    # TODO * cancel a course twice, successfully the first time, and catch WorkflowCourseInstanceAlreadyTerminated
+    # TODO * cancel course and catch WorkflowCourseCancelDeniedByWorkflow for not satisfying cancel permission in wkf
+    # TODO * cancel course and catch WorkflowCourseCancelDeniedByCourse for not satisfying cancel permission in course
+    # TODO * start main course twice and catch WorkflowInstanceNotPending due to course already started
+    # TODO * create a workflow, reach an input node, edit the workflow to remove the action_name from a transition
+    # TODO   try to execute any transition, and catch WorkflowCourseNodeBadTransitionActionNamesForInputNode
+    # TODO * lead a course to a SPLIT node, try executing any action, and catch WorkflowCourseInstanceNotWaiting
