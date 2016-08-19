@@ -455,7 +455,7 @@ class Workflow(object):
             if path == '':
                 return course_instance
             elif not cls.is_splitting(course_instance):
-                return exceptions.WorkflowCourseInstanceDoesNotExist(
+                raise exceptions.WorkflowCourseInstanceDoesNotExist(
                     course_instance, _('Course does not have children')
                 )
             else:
