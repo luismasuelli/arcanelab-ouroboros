@@ -386,7 +386,18 @@ class WorkflowInstanceTestCase(ValidationErrorWrappingTestCase):
             instance.start(users[1])
             instance.start(users[1])
 
+    def test_execute_existing_action_from_split_node_is_bad(self):
+        workflow = self._base_install_workflow_spec()
+        users, task = self._install_users_and_data(Task.SERVICE)
+        with self.assertRaises(exceptions.WorkflowCourseInstanceNotWaiting):
+            instance = Workflow.create(users[6], workflow, task)
+            instance.start(users[1])
+            instance.execute(users[1], 'review')
+            instance.execute(users[6], 'assign')
+            instance.execute(users[0], 'start')
+            instance.execute(users[0], 'complete')
+            instance.execute(users[0], 'on-accept')
+
     # TODO * cancel course and catch WorkflowCourseCancelDeniedByCourse for not satisfying cancel permission in course
     # TODO * create a workflow, reach an input node, edit the workflow to remove the action_name from a transition
     # TODO   try to execute any transition, and catch WorkflowCourseNodeBadTransitionActionNamesForInputNode
-    # TODO * lead a course to a SPLIT node, try executing any action, and catch WorkflowCourseInstanceNotWaiting
