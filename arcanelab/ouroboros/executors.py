@@ -758,7 +758,9 @@ class Workflow(object):
                         # We get the transition by its code.
                         transition = transitions.get(action_name=returned)
                     except models.TransitionSpec.DoesNotExist:
-                        raise exceptions.WorkflowCourseNodeTransitionDoesNotExist(node_spec, returned)
+                        raise exceptions.WorkflowCourseNodeTransitionDoesNotExist(
+                            node_spec, _('No transition has the specified action name'), returned
+                        )
                     # We clean the transition
                     transition.clean()
                     # We force a join in any non-terminated branch (i.e. status in None)
@@ -905,7 +907,11 @@ class Workflow(object):
         """
 
         with atomic():
-            course_instance = self.CourseHelpers.find_course(self.instance.courses.get(parent__isnull=True), path)
+            try:
+                course_instance = self.CourseHelpers.find_course(self.instance.courses.get(parent__isnull=True), path)
+            except models.CourseInstance.DoesNotExist:
+                pass
+
             if self.CourseHelpers.is_terminated(course_instance):
                 raise exceptions.WorkflowCourseInstanceAlreadyTerminated(
                     course_instance, _('Cannot cancel this instance because it is already terminated')
