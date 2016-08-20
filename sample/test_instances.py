@@ -378,9 +378,15 @@ class WorkflowInstanceTestCase(ValidationErrorWrappingTestCase):
             instance.start(users[1])
             instance.cancel(users[3])
 
-    # TODO * cancel course and catch WorkflowCourseCancelDeniedByWorkflow for not satisfying cancel permission in wkf
+    def test_start_a_started_workflow_is_bad(self):
+        workflow = self._base_install_workflow_spec()
+        users, task = self._install_users_and_data(Task.DELIVERABLE)
+        with self.assertRaises(exceptions.WorkflowInstanceNotPending):
+            instance = Workflow.create(users[6], workflow, task)
+            instance.start(users[1])
+            instance.start(users[1])
+
     # TODO * cancel course and catch WorkflowCourseCancelDeniedByCourse for not satisfying cancel permission in course
-    # TODO * start main course twice and catch WorkflowInstanceNotPending due to course already started
     # TODO * create a workflow, reach an input node, edit the workflow to remove the action_name from a transition
     # TODO   try to execute any transition, and catch WorkflowCourseNodeBadTransitionActionNamesForInputNode
     # TODO * lead a course to a SPLIT node, try executing any action, and catch WorkflowCourseInstanceNotWaiting
