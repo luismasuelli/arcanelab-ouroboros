@@ -910,7 +910,13 @@ class Workflow(object):
             try:
                 course_instance = self.CourseHelpers.find_course(self.instance.courses.get(parent__isnull=True), path)
             except models.CourseInstance.DoesNotExist:
-                pass
+                raise exceptions.WorkflowCourseInstanceDoesNotExist(
+                    self.instance, _('No main course exists for this workflow instance')
+                )
+            except models.CourseInstance.MultipleObjectsReturned:
+                raise exceptions.WorkflowCourseInstanceMultipleMatchingElements(
+                    self.instance, _('Multiple main courses exist for this workflow instance')
+                )
 
             if self.CourseHelpers.is_terminated(course_instance):
                 raise exceptions.WorkflowCourseInstanceAlreadyTerminated(
