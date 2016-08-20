@@ -412,6 +412,3 @@ class WorkflowInstanceTestCase(ValidationErrorWrappingTestCase):
             instance.execute(users[0], 'start')
             instance.execute(users[0], 'complete')
             instance.execute(users[0], 'on-accept')
-
-    # TODO * create a workflow, reach an input node, edit the workflow to remove the action_name from a transition
-    # TODO   try to execute any transition, and catch WorkflowCourseNodeBadTransitionActionNamesForInputNode

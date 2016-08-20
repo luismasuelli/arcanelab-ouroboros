@@ -872,17 +872,9 @@ class Workflow(object):
                 node_spec = course_instance.node_instance.node_spec
                 node_spec.clean()
                 transitions = node_spec.outbounds.all()
-                # The transitions will have unique and present action codes.
-                # We validate they have unique codes and all codes are present.
-                # IF the count of distinct action_names is not the same as the count
-                #   of transitions, this means that either some transitions do not
-                #   have action name, or have a repeated one.
-                count = transitions.count()
-                transition_codes = {transition.action_name for transition in transitions if transition.action_name}
-                if len(transition_codes) != count:
-                    raise exceptions.WorkflowCourseNodeBadTransitionActionNamesForInputNode(
-                        node_spec, _('Input node transitions must all have a unique action name')
-                    )
+                # Since we cleaned course_spec and due to the elaborated clean it performs
+                #   which also includes cleaning each outbound, we know each outbound has
+                #   an action_name and it is unique
                 # We get the transition or fail with non-existence
                 try:
                     transition = transitions.get(action_name=action_name)
