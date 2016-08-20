@@ -378,6 +378,21 @@ class WorkflowInstanceTestCase(ValidationErrorWrappingTestCase):
             instance.start(users[1])
             instance.cancel(users[3])
 
+    def test_cancel_course_without_course_permission_is_bad(self):
+        workflow = self._base_install_workflow_spec()
+        spec = workflow.spec
+        permission = spec.cancel_permission
+        spec.cancel_permission = ''
+        spec.save()
+        course_spec = spec.course_specs.get(code='')
+        course_spec.cancel_permission = permission
+        course_spec.save()
+        users, task = self._install_users_and_data(Task.DELIVERABLE)
+        with self.assertRaises(exceptions.WorkflowCourseCancelDeniedByCourse):
+            instance = Workflow.create(users[6], workflow, task)
+            instance.start(users[1])
+            instance.cancel(users[3])
+
     def test_start_a_started_workflow_is_bad(self):
         workflow = self._base_install_workflow_spec()
         users, task = self._install_users_and_data(Task.DELIVERABLE)
@@ -398,6 +413,5 @@ class WorkflowInstanceTestCase(ValidationErrorWrappingTestCase):
             instance.execute(users[0], 'complete')
             instance.execute(users[0], 'on-accept')
 
-    # TODO * cancel course and catch WorkflowCourseCancelDeniedByCourse for not satisfying cancel permission in course
     # TODO * create a workflow, reach an input node, edit the workflow to remove the action_name from a transition
     # TODO   try to execute any transition, and catch WorkflowCourseNodeBadTransitionActionNamesForInputNode
