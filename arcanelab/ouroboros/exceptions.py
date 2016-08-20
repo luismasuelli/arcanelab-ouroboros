@@ -85,7 +85,7 @@ class WorkflowExecutionError(WorkflowExceptionMixin, RuntimeError):
         WorkflowExceptionMixin.__init__(self, raiser)
 
 
-class WorkflowNoSuchElement(WorkflowExceptionMixin, LookupError):
+class WorkflowLookupError(WorkflowExceptionMixin, LookupError):
     """
     This exception will be triggered when trying to find a specific element
       related to a workflow execution (e.g. course code, transition code).
@@ -94,6 +94,14 @@ class WorkflowNoSuchElement(WorkflowExceptionMixin, LookupError):
     def __init__(self, raiser, *args, **kwargs):
         LookupError.__init__(self, *args, **kwargs)
         WorkflowExceptionMixin.__init__(self, raiser)
+
+
+class WorkflowNoSuchElement(WorkflowLookupError):
+    pass
+
+
+class WorkflowMultipleMatchingElements(WorkflowLookupError):
+    pass
 
 
 ############################################################################
@@ -315,6 +323,10 @@ class WorkflowCourseNodeDoesNotExist(WorkflowNoSuchElement):
 
 
 class WorkflowCourseInstanceDoesNotExist(WorkflowNoSuchElement):
+    pass
+
+
+class WorkflowCourseInstanceMultipleMatchingElements(WorkflowMultipleMatchingElements):
     pass
 
 
