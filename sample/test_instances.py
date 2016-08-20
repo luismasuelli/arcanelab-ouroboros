@@ -252,6 +252,18 @@ class WorkflowInstanceTestCase(ValidationErrorWrappingTestCase):
             instance.execute(users[0], 'start')
             instance.execute(users[0], 'complete', 'wtf')
 
+    def test_execute_invalid_nested_course_is_bad(self):
+        workflow = self._base_install_workflow_spec()
+        users, task = self._install_users_and_data(Task.SERVICE)
+        instance = Workflow.create(users[6], workflow, task)
+        instance.start(users[1])
+        with self.assertRaises(exceptions.WorkflowCourseInstanceDoesNotExist):
+            instance.execute(users[1], 'review')
+            instance.execute(users[6], 'assign')
+            instance.execute(users[0], 'start')
+            instance.execute(users[0], 'complete')
+            instance.execute(users[3], 'audit', 'control.clorch') # this one should also fail!
+
     def test_execute_adequately_split_is_good(self):
         workflow = self._base_install_workflow_spec()
         users, task = self._install_users_and_data(Task.SERVICE)
@@ -348,6 +360,15 @@ class WorkflowInstanceTestCase(ValidationErrorWrappingTestCase):
             instance.execute(users[1], 'approve', 'control.approval')
             instance.execute(users[2], 'invoice', 'invoice')
             instance.execute(users[3], 'audit', 'control.audit')
+
+    # def test_cancel_terminated_course_is_bad(self):
+    #     workflow = self._base_install_workflow_spec()
+    #     users, task = self._install_users_and_data(Task.DELIVERABLE)
+    #     with self.assertRaises(exceptions.WorkflowCourseInstanceAlreadyTerminated):
+    #         instance = Workflow.create(users[6], workflow, task)
+    #         instance
+    #         instance.cancel(users[6])
+    #         instance.cancel(users[6])
 
     # TODO * cancel a course twice, successfully the first time, and catch WorkflowCourseInstanceAlreadyTerminated
     # TODO * cancel course and catch WorkflowCourseCancelDeniedByWorkflow for not satisfying cancel permission in wkf

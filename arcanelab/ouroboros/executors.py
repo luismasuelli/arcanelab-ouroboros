@@ -468,10 +468,20 @@ class Workflow(object):
                 try:
                     return cls.find_course(course_instance.node_instance.branches.get(course_spec__code=head), tail)
                 except models.NodeInstance.DoesNotExist:
-                    raise exceptions.WorkflowNoSuchElement(course_instance, _('Child course does not exist'), head)
+                    raise exceptions.WorkflowCourseInstanceDoesNotExist(
+                        course_instance, _('There is no children course with this path/code'), path, head
+                    )
                 except models.NodeInstance.MultipleObjectsReturned:
                     raise exceptions.WorkflowNoSuchElement(course_instance, _('Multiple children courses exist '
                                                                               'with course code in path'), head)
+                except models.CourseInstance.DoesNotExist:
+                    raise exceptions.WorkflowCourseInstanceDoesNotExist(
+                        course_instance, _('There is no children course with this path/code'), path, head
+                    )
+                except models.CourseInstance.MultipleObjectsReturned:
+                    raise exceptions.WorkflowNoSuchElement(
+                        course_instance, _('There are multiple children courses with the same path/code'), path, head
+                    )
 
     class WorkflowHelpers(object):
         """
