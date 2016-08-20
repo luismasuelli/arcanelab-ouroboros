@@ -361,16 +361,15 @@ class WorkflowInstanceTestCase(ValidationErrorWrappingTestCase):
             instance.execute(users[2], 'invoice', 'invoice')
             instance.execute(users[3], 'audit', 'control.audit')
 
-    # def test_cancel_terminated_course_is_bad(self):
-    #     workflow = self._base_install_workflow_spec()
-    #     users, task = self._install_users_and_data(Task.DELIVERABLE)
-    #     with self.assertRaises(exceptions.WorkflowCourseInstanceAlreadyTerminated):
-    #         instance = Workflow.create(users[6], workflow, task)
-    #         instance
-    #         instance.cancel(users[6])
-    #         instance.cancel(users[6])
+    def test_cancel_terminated_course_is_bad(self):
+        workflow = self._base_install_workflow_spec()
+        users, task = self._install_users_and_data(Task.DELIVERABLE)
+        with self.assertRaises(exceptions.WorkflowCourseInstanceAlreadyTerminated):
+            instance = Workflow.create(users[6], workflow, task)
+            instance.start(users[1])
+            instance.cancel(users[6])
+            instance.cancel(users[6])
 
-    # TODO * cancel a course twice, successfully the first time, and catch WorkflowCourseInstanceAlreadyTerminated
     # TODO * cancel course and catch WorkflowCourseCancelDeniedByWorkflow for not satisfying cancel permission in wkf
     # TODO * cancel course and catch WorkflowCourseCancelDeniedByCourse for not satisfying cancel permission in course
     # TODO * start main course twice and catch WorkflowInstanceNotPending due to course already started
