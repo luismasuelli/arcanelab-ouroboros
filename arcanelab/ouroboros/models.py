@@ -765,7 +765,7 @@ class NodeInstance(TrackedLive):
     """
 
     course_instance = models.OneToOneField(CourseInstance, related_name='node_instance', null=False, blank=False)
-    node_spec = models.ForeignKey(NodeSpec, related_name='+', null=False, blank=False)
+    node_spec = models.ForeignKey(NodeSpec, related_name='+', null=False, blank=False, on_delete=models.PROTECT)
 
     def verify_consistency(self):
         exceptions.ensure(lambda obj: obj.node_spec.course_spec == obj.course_instance.course_spec, self,
@@ -809,4 +809,4 @@ class CourseInstanceLog(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, null=False, blank=False, on_delete=models.CASCADE)
     course_instance = models.ForeignKey(CourseInstance, null=False, blank=False, on_delete=models.CASCADE,
                                         related_name='logs')
-    node_spec = models.ForeignKey(NodeSpec, related_name='+', null=False, blank=False)
+    node_spec = models.ForeignKey(NodeSpec, related_name='+', null=False, blank=False, on_delete=models.CASCADE)
