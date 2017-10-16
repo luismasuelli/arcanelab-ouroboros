@@ -45,7 +45,8 @@ class Described(models.Model):
     name = models.CharField(max_length=60, null=False, blank=False, verbose_name=_('Name'))
     description = models.TextField(max_length=1023, null=False, blank=True, verbose_name=_('Description'))
     translated = models.BooleanField(default=True, verbose_name=_('Translated'),
-                                     help_text=_('Tells whether description'))
+                                     help_text=_('Tells whether name and description will be translated via standard '
+                                                 'Django''s i18n mechanism or be treated as normal strings'))
 
     @property
     def display_name(self):

@@ -132,6 +132,16 @@ msgstr "Nombre"
 msgid "Description"
 msgstr "Descripción"
 
+msgid "Translated"
+msgstr "Traducido"
+
+msgid ""
+"Tells whether name and description will be translated via standard "
+"Django's i18n mechanism or be treated as normal strings"
+msgstr ""
+"Indica si el nombre y la descripción van a ser tratados mediante "
+"el mecanismo de i18n de Django o ser tratados como cadenas normales"
+
 #: arcanelab/ouroboros/models.py:44
 msgid "Create Permission"
 msgstr "Permiso de Creación"
