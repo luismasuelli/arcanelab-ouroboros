@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='arcanelab-ouroboros',
-    version='0.0.1',
+    version='0.0.2',
     namespace_packages=['arcanelab'],
     packages=find_packages(exclude=['ouroboros_proj', 'ouroboros_proj.*', 'sample', 'sample.*']),
     package_data={
